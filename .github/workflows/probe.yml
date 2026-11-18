@@ -17,4 +17,6 @@ jobs:
       - name: Modèles, grilles et paquets disponibles
         env:
           MF_API_KEY: ${{ secrets.MF_API_KEY }}
-        run: python scripts/probe_waves.py
+        run: |
+          pip install -q netCDF4 cfgrib eccodes xarray
+          python scripts/probe_waves2.py
