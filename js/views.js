@@ -218,6 +218,20 @@ function renderDirect() {
       <div class="leg"><span><i style="background:var(--obs)"></i>H1/3 mesurée</span><span><i style="background:var(--obs2)"></i>Hmax mesurée</span><span><i class="dash" style="border-color:var(--fc)"></i>prévision</span></div>` : `<p class="m">${b.id === "01704" ? "La bouée la plus proche d'Oléron ne transmet plus depuis le 18 avril 2026 (Candhis l'indique en service limité). Elle reprendra ici automatiquement." : "Pas de mesure récente."}</p>`}
     </div>`);
   });
+  (S.obs?.stations || []).forEach(st => {
+    const last = st.series[st.series.length - 1]; const age = last ? Date.now() - new Date(last.t) : Infinity;
+    const fc = S.stationFc?.[st.id];
+    const avg = st.series.map(r => ({ x: +new Date(r.t), y: r.v })), gust = st.series.map(r => ({ x: +new Date(r.t), y: r.g }));
+    const fpts = fc ? fc.time.map((tt, k) => ({ x: +new Date(tt + ":00Z"), y: fc.wind_speed_10m[k] })).filter(p => p.x >= (avg[0]?.x ?? Date.now() - 864e5) && p.x <= Date.now() + 2 * 3600e3) : [];
+    const f = fc ? fcAt(fc, "wind_speed_10m", new Date(new Date().setUTCMinutes(0, 0, 0))) : null;
+    cards.push(`<div class="card dcard${age > 3 * 3600e3 ? " down" : ""}">
+      <div class="dhead"><h3>Anémomètre ${esc(st.name)}</h3><span class="tag">${age > 3 * 3600e3 ? "muet" : "en direct"}</span></div>
+      <div class="m">Météo-France ${st.id} · mesure toutes les 6 min · ${last ? "dernière " + ago(age) : "aucune mesure"}</div>
+      ${last ? `<div class="kpis"><div><b>${fmt(last.v, 0)} km/h</b><span>vent moyen</span></div><div><b>${fmt(last.g, 0)} km/h</b><span>rafales</span></div><div><b>${arrow(last.d)} ${card(last.d)}</b><span>direction</span></div><div><b>${f == null ? "–" : fmt(f, 0) + " km/h"}</b><span>prévu (AROME HD)</span></div></div>
+      ${lineChart({ series: [{ pts: gust, color: "var(--obs2)" }, { pts: avg, color: "var(--obs)" }, { pts: fpts, color: "var(--fc)", dash: true }], unit: "km/h", xFmt: hhmm })}
+      <div class="leg"><span><i style="background:var(--obs)"></i>moyen mesuré</span><span><i style="background:var(--obs2)"></i>rafales mesurées</span><span><i class="dash" style="border-color:var(--fc)"></i>AROME HD</span></div>` : ""}
+    </div>`);
+  });
   S.beacons.forEach(s => {
     const m = s.measurements || {}, t = m.date ? new Date(m.date) : null, age = t ? Date.now() - t : Infinity;
     const avg = (s.archive || []).map(r => ({ x: +new Date(r[0]), y: r[4] })), max = (s.archive || []).map(r => ({ x: +new Date(r[0]), y: r[5] }));
@@ -238,7 +252,8 @@ function renderDirect() {
       <div class="kpis"><div><b>${fmt(last.v, 2)} m</b><span>hauteur d'eau</span></div></div>
       ${lineChart({ series: [{ pts: g.filter((_, i) => i % 5 === 0).map(p => ({ x: +p.t, y: p.v })), color: "var(--obs)" }], unit: "m", xFmt: hhmm })}</div>`);
   }
-  cards.push(`<div class="card dcard down"><div class="dhead"><h3>Anémomètres des phares</h3><span class="tag">à brancher</span></div><p class="m">${MF_KEY_NOTE}</p></div>`);
+  if (!(S.obs?.stations || []).some(s => s.series?.length))
+    cards.push(`<div class="card dcard down"><div class="dhead"><h3>Anémomètres des phares</h3><span class="tag">à brancher</span></div><p class="m">${MF_KEY_NOTE}${S.obs?.stationsNote ? " État : " + esc(S.obs.stationsNote) + "." : ""}</p></div>`);
   $("#directcards").innerHTML = cards.join("");
   $("#directstamp").textContent = S.obs?.generated ? `Bouées relevées ${ago(Date.now() - new Date(S.obs.generated))} · balises et marégraphe interrogés à l'ouverture.` : "";
   renderDirectMap();
@@ -253,6 +268,7 @@ function renderDirectMap() {
   DLAYER.clearLayers();
   const pin = (lat, lon, html, title) => L.marker([lat, lon], { icon: L.divIcon({ className: "ico", html, iconSize: [0, 0] }), title }).addTo(DLAYER);
   S.obs?.buoys.forEach(b => { const last = b.series[b.series.length - 1], down = !last || Date.now() - new Date(last.t) > 6 * 3600e3; pin(b.lat, b.lon, `<div class="dpin${down ? " off" : ""}">${down ? "×" : fmt(last.hs) + " m"}</div><div class="dlab">${esc(b.name)}</div>`, b.name); });
+  (S.obs?.stations || []).forEach(st => { const l = st.series[st.series.length - 1]; if (l) pin(st.lat, st.lon, `<div class="dpin mf">${arrow(l.d)} ${fmt(l.v, 0)}</div><div class="dlab">${esc(st.name)}</div>`, st.name); });
   S.beacons.forEach(s => { const m = s.measurements || {}; pin(s.location.latitude, s.location.longitude, `<div class="dpin wind">${arrow(m.wind_heading)} ${fmt(m.wind_speed_avg, 0)}</div><div class="dlab">${esc(s.meta?.name || s.id)}</div>`, s.meta?.name); });
   if (S.gauge?.length) pin(TIDE_GAUGE.lat, TIDE_GAUGE.lon, `<div class="dpin tide">${fmt(S.gauge[S.gauge.length - 1].v, 2)} m</div><div class="dlab">Marégraphe</div>`, "Marégraphe");
   S.spots.forEach(({ spot }) => L.circleMarker([spot.lat, spot.lon], { radius: 4, color: "#fff", weight: 1.5, fillColor: "#0e6e8c", fillOpacity: 1 }).bindTooltip(spot.name).addTo(DLAYER));

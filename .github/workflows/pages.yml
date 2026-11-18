@@ -28,7 +28,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Bouées Candhis
+      - name: Bouées Candhis et anémomètres Météo-France
+        env:
+          MF_API_KEY: ${{ secrets.MF_API_KEY }}
         run: python scripts/fetch_obs.py data/obs.json
       - name: Préparer le site
         run: |

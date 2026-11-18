@@ -262,6 +262,15 @@ async function loadBuoyForecast(buoys) {
   const j = await getJSON(`https://marine-api.open-meteo.com/v1/marine?${qs({ latitude: buoys.map(b => b.lat).join(","), longitude: buoys.map(b => b.lon).join(","), hourly: "wave_height,wave_period,wave_direction", models: "meteofrance_wave", timezone: "GMT", past_days: 2, forecast_days: 2 })}`);
   return arr(j).map(x => x.hourly);
 }
+/* AROME HD aux anémomètres Météo-France (pour comparer prévu / mesuré) */
+async function loadStationForecast(stations) {
+  const st = stations.filter(s => s.series?.length);
+  if (!st.length) return [];
+  const j = await getJSON(`https://api.open-meteo.com/v1/forecast?${qs({ latitude: st.map(s => s.lat).join(","), longitude: st.map(s => s.lon).join(","), hourly: "wind_speed_10m,wind_direction_10m,wind_gusts_10m", models: "meteofrance_arome_france_hd", wind_speed_unit: "kmh", timezone: "GMT", past_days: 1, forecast_days: 1 })}`);
+  const res = arr(j); const out = {};
+  st.forEach((s, i) => { out[s.id] = res[i].hourly; });
+  return out;
+}
 async function loadBeacons() {
   const all = await getJSON("https://api.pioupiou.fr/v1/live/all", 20000);
   const near = all.data.filter(s => { const l = s.location || {}; return l.latitude > BEACON_BBOX.s && l.latitude < BEACON_BBOX.n && l.longitude > BEACON_BBOX.w && l.longitude < BEACON_BBOX.e; });
@@ -300,6 +309,11 @@ function computeSkill() {
   S.beacons.forEach(s => {
     (s.archive || []).forEach(row => { const t = new Date(row[0]); const f = fcAt(s.fc, "wind_speed_10m", t); if (f != null && row[4] != null && t.getUTCMinutes() < 10) windErr.push(Math.abs(row[4] - f)); });
   });
+  // anémomètres Météo-France (exposés, comptés deux fois)
+  (S.obs?.stations || []).forEach(s => {
+    const fc = S.stationFc?.[s.id]; if (!fc) return;
+    s.series.forEach(r => { const t = new Date(r.t); if (t.getUTCMinutes() !== 0 || Date.now() - t > 24 * 3600e3) return; const f = fcAt(fc, "wind_speed_10m", t); if (f != null && r.v != null) { const e = Math.abs(r.v - f); windErr.push(e, e); } });
+  });
   const we = mean(waveErr), wi = mean(windErr);
   const parts = [];
   if (we != null) parts.push(clamp(1 - we / 0.5, 0, 1));
@@ -313,7 +327,10 @@ async function loadAll() {
   if (!S.cfg) S.cfg = await getJSON("spots.json?ts=" + Date.now(), 10000);
   try { S.tide = await loadTide(); } catch (e) { S.errors.push("Marée prévue indisponible."); S.tide = { map: new Map(), extremes: [], series: [] }; }
   const pF = loadSpotForecasts(S.cfg.spots).then(x => { S.spots = x; }).catch(e => S.errors.push("Prévisions indisponibles (" + e.message + ")."));
-  const pO = loadObs().then(async o => { S.obs = o; S.buoyFc = await loadBuoyForecast(o.buoys).catch(() => null); }).catch(() => { S.obs = null; });
+  const pO = loadObs().then(async o => {
+    S.obs = o;
+    [S.buoyFc, S.stationFc] = await Promise.all([loadBuoyForecast(o.buoys).catch(() => null), loadStationForecast(o.stations || []).catch(() => null)]);
+  }).catch(() => { S.obs = null; });
   const pB = loadBeacons().then(b => { S.beacons = b; }).catch(() => { S.beacons = []; S.errors.push("Balises de vent injoignables."); });
   const pG = loadGauge().then(g => { S.gauge = g; }).catch(() => { S.gauge = null; });
   await Promise.all([pF, pO, pB, pG]);

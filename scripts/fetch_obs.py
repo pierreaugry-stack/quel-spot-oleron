@@ -6,8 +6,10 @@ le résultat à côté de la page. Une seule requête par bouée et par passage.
 """
 import base64
 import json
+import os
 import re
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -79,8 +81,62 @@ def parse(html: str) -> list:
     return sorted(rows.values(), key=lambda r: r["t"])
 
 
+# Anémomètres Météo-France (API « Données d'observation », clé dans le secret MF_API_KEY).
+MF_STATIONS = [
+    {"id": "17323001", "name": "Chassiron", "lat": 46.0468, "lon": -1.4117},
+    {"id": "17318001", "name": "Phare des Baleines", "lat": 46.2430, "lon": -1.5617},
+    {"id": "17300009", "name": "La Rochelle – Île de Ré", "lat": 46.1780, "lon": -1.1932},
+    {"id": "17306004", "name": "Royan – Médis", "lat": 45.6330, "lon": -0.9747},
+]
+MF_URL = "https://public-api.meteofrance.fr/public/DPObs/v1/paquet/infrahoraire-6m?id_departement=17&format=json"
+
+
+def num(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_mf(key: str) -> list:
+    """24 h d'observations toutes les 6 min pour la Charente-Maritime (une seule requête)."""
+    req = urllib.request.Request(MF_URL, headers={"apikey": key, "accept": "application/json", "User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        rows = json.loads(r.read().decode("utf-8"))
+    out = []
+    for st in MF_STATIONS:
+        series = []
+        for row in rows:
+            if str(row.get("geo_id_insee")) != st["id"]:
+                continue
+            ff, dd = num(row.get("ff")), num(row.get("dd"))
+            gust = num(row.get("fxi10")) or num(row.get("fxi"))
+            t = row.get("validity_time") or row.get("reference_time")
+            if t is None or ff is None:
+                continue
+            series.append({"t": t[:19] + "Z" if not t.endswith("Z") else t,
+                           "v": round(ff * 3.6, 1), "g": None if gust is None else round(gust * 3.6, 1),
+                           "d": dd, "temp": num(row.get("t"))})
+        series.sort(key=lambda r: r["t"])
+        out.append(dict(st, series=series[-240:]))
+    return out
+
+
 def main(out: Path) -> int:
-    result = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "buoys": []}
+    result = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "buoys": [], "stations": [], "stationsNote": None}
+    key = os.environ.get("MF_API_KEY", "").strip()
+    if key:
+        try:
+            result["stations"] = fetch_mf(key)
+            print(f"Météo-France : {sum(bool(s['series']) for s in result['stations'])}/{len(MF_STATIONS)} stations")
+        except urllib.error.HTTPError as e:
+            result["stationsNote"] = f"API Météo-France : erreur {e.code}"
+            print(result["stationsNote"])
+        except Exception as e:
+            result["stationsNote"] = "API Météo-France injoignable"
+            print(result["stationsNote"], str(e)[:200])
+    else:
+        result["stationsNote"] = "Clé Météo-France absente"
     ok = 0
     for b in BUOYS:
         entry = dict(b, series=[], error=None)
