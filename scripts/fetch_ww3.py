@@ -11,6 +11,7 @@ import base64
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -23,11 +24,20 @@ KEY = os.environ.get("MF_API_KEY", "").strip()
 BOX = dict(lat0=45.55, lat1=46.45, lon0=-1.95, lon1=-0.95, d=0.01)
 
 
-def api(path, raw=False):
-    req = urllib.request.Request(BASE + path, headers={"apikey": KEY, "accept": "*/*", "User-Agent": "quel-spot-oleron/ww3"})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        b = r.read()
-    return b if raw else json.loads(b.decode("utf-8"))
+def api(path, raw=False, tries=4):
+    """appel à l'API avec nouvelles tentatives (le serveur refuse parfois une connexion)"""
+    import time
+    for k in range(tries):
+        try:
+            req = urllib.request.Request(BASE + path, headers={"apikey": KEY, "accept": "*/*", "User-Agent": "quel-spot-oleron/ww3"})
+            with urllib.request.urlopen(req, timeout=600) as r:
+                b = r.read()
+            return b if raw else json.loads(b.decode("utf-8"))
+        except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+            if k == tries - 1:
+                raise
+            print(f"tentative {k + 1} échouée ({e}), nouvel essai dans {30 * (k + 1)} s")
+            time.sleep(30 * (k + 1))
 
 
 def latest_ref():
