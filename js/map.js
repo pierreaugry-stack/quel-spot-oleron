@@ -142,6 +142,7 @@ async function showForecastMap() {
     try {
       const [g, land, bathy] = await Promise.all([loadFieldGrid(), MV.land || getJSON("data/land.json", 15000), CM.ready ? null : getJSON("data/bathy.json", 20000)]);
       MV.grid = g; MV.land = land; MV.times = g.times; MV.cache.clear();
+      await loadWW3Grid();
       if (!CM.ready) { st.textContent = "Calcul du modèle côtier (ombre des îles, fonds)…"; await new Promise(r => setTimeout(r, 30)); buildCoast(land, bathy); }
       const k = MV.times.indexOf(S.nowKey); MV.idx = k >= 0 ? k : 0;
       const sl = $("#fhour"); sl.max = MV.times.length - 1; sl.value = MV.idx;
@@ -154,7 +155,13 @@ async function showForecastMap() {
 function hideForecastMap() { MV.ready = false; stopParticles(); if (MV.playing) togglePlay(); }
 
 function drawAll() { updateLabel(); drawField(); drawSpots(); drawLegend(); seedParticles(); }
-function updateLabel() { const t = MV.times[MV.idx]; if (t) $("#fhourLabel").textContent = timeLabel(t) + (t === S.nowKey ? " · maintenant" : ""); }
+function updateLabel() {
+  const t = MV.times[MV.idx]; if (!t) return;
+  $("#fhourLabel").textContent = timeLabel(t) + (t === S.nowKey ? " · maintenant" : "");
+  const st = $("#fmapStatus"); if (!st || MV.mode === "wind") { if (st) st.textContent = ""; return; }
+  st.textContent = ww3Hour(MV.idx) ? `Houle près des côtes : WaveWatch III Météo-France (maillage ≈ 1 km), run du ${new Date(W3.data.run).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.`
+    : "Houle près des côtes : modèle côtier simplifié (au-delà de l'horizon de WaveWatch III).";
+}
 function canvasFit(cv) {
   const m = MV.map, size = m.getSize(), dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = size.x * dpr; cv.height = size.y * dpr; cv.style.width = size.x + "px"; cv.style.height = size.y + "px";
@@ -171,8 +178,44 @@ function drawCoast(ctx, dpr) {
   MV.land.forEach(ring => ring.forEach(([lo, la], i) => { const p = m.latLngToContainerPoint([la, lo]); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }));
   ctx.closePath(); ctx.stroke(); ctx.restore();
 }
+/* ---------- houle côtière WaveWatch III (data/ww3.json, grille 0,01°, octets en base64) ---------- */
+const W3 = { data: null, cache: new Map() };
+async function loadWW3Grid() { try { W3.data = await getJSON(`data/ww3.json?ts=${Math.floor(Date.now() / 18e5)}`, 30000); W3.idx = new Map(W3.data.times.map((t, i) => [t.slice(0, 13), i])); } catch (e) { W3.data = null; } }
+function ww3Hour(idx) {
+  if (!W3.data) return null;
+  const k = W3.idx.get(new Date(MV.times[idx] + ":00").toISOString().slice(0, 13)); if (k == null) return null;
+  if (!W3.cache.has(k)) {
+    const dec = b => { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+    W3.cache.set(k, { hs: dec(W3.data.hs[k]), dir: dec(W3.data.dir[k]), tp: dec(W3.data.tp[k]) });
+  }
+  return W3.cache.get(k);
+}
+function w3Sample(u, lat, lon, scale) {
+  const D = W3.data, fy = (lat - D.lat0) / D.d, fx = (lon - D.lon0) / D.d;
+  if (fx < 0 || fy < 0 || fx > D.nc - 1 || fy > D.nr - 1) return undefined; // hors de la zone WW3
+  const x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0;
+  let s = 0, w = 0;
+  for (const [dx, dy, ww] of [[0, 0, (1 - tx) * (1 - ty)], [1, 0, tx * (1 - ty)], [0, 1, (1 - tx) * ty], [1, 1, tx * ty]]) {
+    const x = Math.min(x0 + dx, D.nc - 1), y = Math.min(y0 + dy, D.nr - 1), v = u[y * D.nc + x];
+    if (v !== 255) { s += v * ww; w += ww; }
+  }
+  return w > 0.05 ? s / w * scale : null;
+}
+function w3Dir(u, lat, lon) {
+  const D = W3.data, x = Math.round((lon - D.lon0) / D.d), y = Math.round((lat - D.lat0) / D.d);
+  if (x < 0 || y < 0 || x >= D.nc || y >= D.nr) return null; const v = u[y * D.nc + x]; return v === 255 ? null : v * 360 / 256;
+}
 function valueAt(lat, lon) {
   if (MV.mode === "wind") return bil(MV.grid.hours[MV.idx].ws, lat, lon);
+  const w3 = ww3Hour(MV.idx);
+  if (w3) {
+    const h = w3Sample(w3.hs, lat, lon, 0.05);
+    if (h !== undefined) {
+      if (h == null) return null;
+      const t = w3Sample(w3.tp, lat, lon, 0.1);
+      return MV.mode === "hs" ? h : MV.mode === "energy" ? 0.49 * h * h * (t ?? 0) : t;
+    }
+  }
   if (lon < CM.X0 + 0.01) { // au large, hors du modèle côtier : houle Météo-France telle quelle
     const g = MV.grid.hours[MV.idx], h = Math.hypot(bil(g.swh, lat, lon) ?? 0, bil(g.wwh, lat, lon) ?? 0), t = bil(g.swp, lat, lon);
     return MV.mode === "hs" ? h : MV.mode === "energy" ? 0.49 * h * h * (t ?? 0) : t;
@@ -213,6 +256,8 @@ function onSea(lat, lon) {
 function flowVec(lat, lon) {
   if (MV.mode === "wind") { const w = windVec(lat, lon); return w ? [w[0], w[1], 0.25 + w[2] * 0.06] : null; }
   if (!onSea(lat, lon)) return null;
+  const w3 = ww3Hour(MV.idx);
+  if (w3) { const d = w3Dir(w3.dir, lat, lon); if (d != null) { const p = w3Sample(w3.tp, lat, lon, 0.1); const r = d * Math.PI / 180; return [-Math.sin(r), -Math.cos(r), 0.35 + (p ?? 8) * 0.07]; } }
   const f = MV.grid.hours[MV.idx], s = bil(f.sws, lat, lon), c = bil(f.swc, lat, lon), p = bil(f.swp, lat, lon);
   if (s == null || c == null) return null;
   const n = Math.hypot(s, c) || 1; return [-s / n, -c / n, 0.35 + (p ?? 8) * 0.07];
@@ -253,7 +298,7 @@ function drawSpots() {
   const t = MV.times[MV.idx], f = MV.grid && CM.ready ? fieldFor(MV.idx) : null;
   S.spots.forEach(({ spot, hours }) => {
     const h = hours.find(x => x.t === t); const s = h?.raw;
-    const near = f ? coastSample(f.Hs, spot.lat, spot.lon) : null;
+    const near = h?.surf?.ww3?.hs ?? (f ? coastSample(f.Hs, spot.lat, spot.lon) : null);
     const html = `<a class="mpin" href="#spot-${spot.id}" style="--c:${scoreColor(s)};--i:${scoreInk(s)}"><b>${s == null ? "–" : fmt(s)}</b><span>${esc(spot.name)} · ${h ? surfTxt(h.surf) : "–"}${near != null ? ` · Hs bord ${fmt(near)} m` : ""}</span></a>`;
     L.marker([spot.lat, spot.lon], { icon: L.divIcon({ className: "ico", html, iconSize: [0, 0], iconAnchor: [0, 0] }), keyboard: false }).addTo(MV.spotsLayer);
   });
@@ -287,6 +332,6 @@ function togglePlay() {
 }
 function setMapMode(mode) {
   MV.mode = mode; document.querySelectorAll("[data-fmode]").forEach(b => b.setAttribute("aria-pressed", b.dataset.fmode === mode));
-  drawLegend(); drawField(); seedParticles();
+  drawLegend(); drawField(); seedParticles(); updateLabel();
   const c = MV.part.getContext("2d"); c.clearRect(0, 0, MV.part.width, MV.part.height);
 }

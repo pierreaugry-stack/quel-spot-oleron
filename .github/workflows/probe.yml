@@ -17,10 +17,4 @@ jobs:
       - name: Modèles, grilles et paquets disponibles
         env:
           MF_API_KEY: ${{ secrets.MF_API_KEY }}
-        run: |
-          pip install -q netCDF4 scipy numpy
-          mkdir -p /tmp/out
-          python scripts/fetch_ww3.py /tmp/out
-          ls -la /tmp/out
-          gzip -k /tmp/out/ww3.json && ls -la /tmp/out/ww3.json.gz
-          python -c "import json;d=json.load(open('/tmp/out/ww3_spots.json'));print({k:(v['dist_km'],v['hs'][:6],v.get('tp',[None])[:3]) for k,v in d['spots'].items()})"
+        run: python scripts/probe_waves.py

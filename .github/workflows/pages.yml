@@ -45,6 +45,25 @@ jobs:
         if: steps.gridcache.outputs.cache-hit != 'true'
         continue-on-error: true
         run: python scripts/fetch_grid.py data/grid.json
+      - name: Créneau de 6 h pour la houle côtière
+        id: slot6
+        run: echo "slot=$(date -u +%Y%m%d)-$(( $(date -u +%H) / 6 ))" >> "$GITHUB_OUTPUT"
+      - name: Houle côtière en cache
+        id: ww3cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/ww3.json
+            data/ww3_spots.json
+          key: ww3-${{ steps.slot6.outputs.slot }}
+      - name: Houle côtière WaveWatch III Météo-France (1 km)
+        if: steps.ww3cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        env:
+          MF_API_KEY: ${{ secrets.MF_API_KEY }}
+        run: |
+          pip install -q netCDF4 scipy numpy
+          python scripts/fetch_ww3.py data
       - name: Archive des mesures (branche archive)
         run: |
           git fetch -q origin archive:archive || true

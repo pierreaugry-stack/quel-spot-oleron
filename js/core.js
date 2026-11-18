@@ -119,7 +119,7 @@ function rateHour(spot, h, bias = 1) {
   ];
   // hauteur « au large » vue du spot (critères du doc)
   const heff = Math.sqrt(comps.reduce((e, c) => c.h == null ? e : e + Math.pow(c.h * dirMult(c.d, spot) * (c.w ?? 1), 2), 0));
-  const surf = (typeof CM !== "undefined" && CM.ready && surfCoast(spot, comps, h.wind, h.t)) || surfHeight(spot, comps);
+  const surf = surfWW3(spot, h.t) || (typeof CM !== "undefined" && CM.ready && surfCoast(spot, comps, h.wind, h.t)) || surfHeight(spot, comps);
   const E = energyOf(h.sw.h * bias, h.sw.p);
   const parts = {
     size: sizeScore(heff, spot.size), period: periodScore(h.sw.p, spot.periodMin),
@@ -330,13 +330,14 @@ async function loadAll() {
     .then(([land, bathy]) => { MV.land = land; buildCoast(land, bathy); }).catch(() => S.errors.push("Modèle côtier indisponible : hauteurs de surf estimées avec l'abri fixe."));
   try { S.tide = await loadTide(); } catch (e) { S.errors.push("Marée prévue indisponible."); S.tide = { map: new Map(), extremes: [], series: [] }; }
   const pF = loadSpotForecasts(S.cfg.spots).then(x => { S.spots = x; }).catch(e => S.errors.push("Prévisions indisponibles (" + e.message + ")."));
+  const pW = getJSON(`data/ww3_spots.json?ts=${Math.floor(Date.now() / 18e5)}`, 15000).then(w => { S.ww3 = w; S.ww3idx = new Map(w.times.map((t, i) => [t.slice(0, 13), i])); }).catch(() => { S.ww3 = null; });
   const pO = loadObs().then(async o => {
     S.obs = o;
     [S.buoyFc, S.stationFc] = await Promise.all([loadBuoyForecast(o.buoys).catch(() => null), loadStationForecast(o.stations || []).catch(() => null)]);
   }).catch(() => { S.obs = null; });
   const pB = loadBeacons().then(b => { S.beacons = b; }).catch(() => { S.beacons = []; S.errors.push("Balises de vent injoignables."); });
   const pG = loadGauge().then(g => { S.gauge = g; }).catch(() => { S.gauge = null; });
-  await Promise.all([pF, pO, pB, pG, pC]);
+  await Promise.all([pF, pO, pB, pG, pC, pW]);
   calibrateTide(); computeSkill(); scoreAll();
 }
 
@@ -398,4 +399,20 @@ function calibrateTide() {
     e.coef = coefOf(best.a * (Math.max(...w) - Math.min(...w)));
   });
   S.tide.extremes.forEach(x => { x.at = new Date(x.at.getTime() + best.lag * 60e3); x.levelCD = best.a * x.level + best.b; const e = S.tide.map.get(x.time); if (e) x.coef = e.coef; });
+}
+
+
+/* ---------- houle côtière WaveWatch III (Météo-France, maillage ~1 km) ----------
+   Valeur au point de modèle le plus proche du spot : le modèle a déjà propagé la houle sur les fonds
+   et derrière les îles. La hauteur de surf (faces des séries) est prise entre 0,9 et 1,4 × Hs. */
+const utcHourKey = t => new Date(t + ":00").toISOString().slice(0, 13);
+function ww3At(spotId, t) {
+  const w = S.ww3, s = w?.spots?.[spotId]; if (!s) return null;
+  const i = S.ww3idx.get(utcHourKey(t)); if (i == null || s.hs?.[i] == null) return null;
+  const g = k => s[k]?.[i] ?? null;
+  return { hs: g("hs"), tp: g("tp"), dir: g("dir"), parts: [0, 1, 2].map(p => ({ h: g("hs" + p), p: g("tp" + p), d: g("dir" + p) })).filter(x => x.h != null && x.h > 0.05) };
+}
+function surfWW3(spot, t) {
+  const w = ww3At(spot.id, t); if (!w) return null;
+  return { min: w.hs * 0.9, max: w.hs * 1.4, kd: null, ww3: w, model: "WW3" };
 }

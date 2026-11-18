@@ -98,7 +98,7 @@ function renderSpot(id) {
       <div class="card sbest">
         <div class="eyebrow">${longDay(day)} · heure choisie ${hourOf(sel.t)} h</div>
         <div class="bigrow"><div class="big" style="background:${scoreColor(sel.raw)};color:${scoreInk(sel.raw)}">${fmt(sel.raw)}</div>
-          <div><div class="surfbig">${surfTxt(sel.surf)}</div><div class="m">hauteur de surf estimée au bord${sel.surf?.kd != null ? ` · ${Math.round(sel.surf.kd * 100)} % de la houle arrive (ombre des îles et fonds)` : ""} · ${sel.day ? verdict(sel.raw) : "nuit"}</div></div></div>
+          <div><div class="surfbig">${surfTxt(sel.surf)}</div><div class="m">hauteur de surf estimée au bord${sel.surf?.ww3 ? ` · WaveWatch III Météo-France : Hs ${fmt(sel.surf.ww3.hs)} m ${fmt(sel.surf.ww3.tp, 0)} s devant le spot` : sel.surf?.kd != null ? ` · ${Math.round(sel.surf.kd * 100)} % de la houle arrive (modèle côtier simplifié)` : ""} · ${sel.day ? verdict(sel.raw) : "nuit"}</div></div></div>
         <p class="m">${best ? `Meilleure heure : <b>${hourOf(best.t)} h (${fmt(best.score)})</b>.` : "Pas d'heure de jour."} Lever ${sr ? sr.slice(11) : "–"} · coucher ${ss ? ss.slice(11) : "–"}.</p>
       </div>
       ${confCard(sel)}
