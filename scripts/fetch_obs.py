@@ -132,6 +132,8 @@ def fetch_mf(key: str) -> list:
             rows += r or []
             if r and all(any(str(x.get("geo_id_insee")) == s["id"] for x in r) for s in MF_STATIONS):
                 break  # la réponse contient déjà toutes les stations voulues
+    if rows:
+        print("Champs Météo-France :", ",".join(sorted(rows[0].keys())))
     if not rows:
         rows = []
         for st in MF_STATIONS:
@@ -146,7 +148,7 @@ def fetch_mf(key: str) -> list:
             if str(row.get("geo_id_insee")) != st["id"]:
                 continue
             ff, dd = num(row.get("ff")), num(row.get("dd"))
-            gust = num(row.get("fxi10")) or num(row.get("fxi"))
+            gust = next((num(row.get(f)) for f in ("fxi10", "fxi", "fxi3s", "fxy", "fx") if num(row.get(f)) is not None), None)
             t = row.get("validity_time") or row.get("reference_time")
             if t is None or ff is None:
                 continue
