@@ -88,7 +88,10 @@ MF_STATIONS = [
     {"id": "17300009", "name": "La Rochelle – Île de Ré", "lat": 46.1780, "lon": -1.1932},
     {"id": "17306004", "name": "Royan – Médis", "lat": 45.6330, "lon": -0.9747},
 ]
-MF_URL = "https://public-api.meteofrance.fr/public/DPObs/v1/paquet/infrahoraire-6m?id_departement=17&format=json"
+# « Package Observations » : 24 h de mesures 6 min pour tout le département en une requête.
+MF_URL = "https://public-api.meteofrance.fr/public/DPPaquetObs/v1/paquet/infrahoraire-6m?id-departement=17&format=json"
+# « Données d'observation » : dernière mesure d'une station (repli si le paquet n'est pas souscrit).
+MF_STATION_URL = "https://public-api.meteofrance.fr/public/DPObs/v1/station/infrahoraire-6m?id_station={id}&format=json"
 
 
 def num(x):
@@ -100,9 +103,23 @@ def num(x):
 
 def fetch_mf(key: str) -> list:
     """24 h d'observations toutes les 6 min pour la Charente-Maritime (une seule requête)."""
-    req = urllib.request.Request(MF_URL, headers={"apikey": key, "accept": "application/json", "User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        rows = json.loads(r.read().decode("utf-8"))
+    def get(url):
+        req = urllib.request.Request(url, headers={"apikey": key, "accept": "*/*", "User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return data if isinstance(data, list) else [data]
+    try:
+        rows = get(MF_URL)
+    except urllib.error.HTTPError as e:
+        print(f"Package Observations : erreur {e.code}, repli sur Données d'observation")
+        rows = []
+        for st in MF_STATIONS:
+            try:
+                rows += get(MF_STATION_URL.format(id=st["id"]))
+            except urllib.error.HTTPError as e2:
+                if e2.code in (401, 403):
+                    raise
+                print(f"Station {st['id']} : erreur {e2.code}")
     out = []
     for st in MF_STATIONS:
         series = []
