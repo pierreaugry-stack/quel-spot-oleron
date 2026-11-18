@@ -119,14 +119,17 @@ def fetch_mf(key: str) -> list:
             print(f"{label} : erreur {e.code} {body}")
             return None
 
-    base = "https://public-api.meteofrance.fr/public/DPPaquetObs/{v}/paquet/infrahoraire-6m?{p}=17&format=json"
-    for v in ("v2", "v1"):
-        for p in ("id-departement", "id_departement"):
-            rows = attempt(f"Package Observations {v} {p}", base.format(v=v, p=p))
-            if rows:
-                break
-        if rows:
-            break
+    api = "https://public-api.meteofrance.fr/public/DPPaquetObs/v2"
+    rows = attempt("Package département", f"{api}/paquet/stations/infrahoraire-6m?id-departement=17&format=json")
+    if not rows:
+        rows = []
+        for st in MF_STATIONS:
+            r = None
+            for p in ("id_station", "id-station"):
+                r = attempt(f"Package station {st['id']} {p}", f"{api}/paquet/infrahoraire-6m?{p}={st['id']}&format=json")
+                if r:
+                    break
+            rows += r or []
     if not rows:
         rows = []
         for st in MF_STATIONS:
