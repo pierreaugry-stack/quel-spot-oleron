@@ -97,7 +97,7 @@ function renderSpot(id) {
       <div class="card sbest">
         <div class="eyebrow">${longDay(day)} · heure choisie ${hourOf(sel.t)} h</div>
         <div class="bigrow"><div class="big" style="background:${scoreColor(sel.raw)};color:${scoreInk(sel.raw)}">${fmt(sel.raw)}</div>
-          <div><div class="surfbig">${surfTxt(sel.surf)}</div><div class="m">hauteur de surf estimée au bord · ${sel.day ? verdict(sel.raw) : "nuit"}</div></div></div>
+          <div><div class="surfbig">${surfTxt(sel.surf)}</div><div class="m">hauteur de surf estimée au bord${sel.surf?.kd != null ? ` · ${Math.round(sel.surf.kd * 100)} % de la houle arrive (ombre des îles et fonds)` : ""} · ${sel.day ? verdict(sel.raw) : "nuit"}</div></div></div>
         <p class="m">${best ? `Meilleure heure : <b>${hourOf(best.t)} h (${fmt(best.score)})</b>.` : "Pas d'heure de jour."} Lever ${sr ? sr.slice(11) : "–"} · coucher ${ss ? ss.slice(11) : "–"}.</p>
       </div>
       ${confCard(sel)}
@@ -192,7 +192,7 @@ function spotCfg(s) {
     <dt>Houle</dt><dd>${card(s.swell.ideal)} (${s.swell.ideal}° ± ${s.swell.window}°), ${fmt(s.size[1])}–${fmt(s.size[2])} m idéal, ${fmt(s.size[0])} mini, ${fmt(s.size[3])} maxi, période ≥ ${s.periodMin ?? "–"} s${s.energy?.min ? `, énergie ≥ ${s.energy.min} kW/m` : ""}</dd>
     <dt>Vent offshore</dt><dd>${card(s.wind_.offshore)} (${s.wind_.offshore}°), offshore toléré jusqu'à ${s.wind_.maxOffshore} km/h</dd>
     <dt>Marée</dt><dd>${t(s.tide.lo)}–${t(s.tide.hi)} du marnage${s.tide.prefer ? ", " + s.tide.prefer : ""}${s.coef?.max ? `, coef ≤ ${s.coef.max}` : ""}</dd>
-    <dt>Abri</dt><dd>${Math.round((s.shelter ?? 1) * 100)} % de la houle du large arrive au bord</dd>
+    <dt>Abri</dt><dd>${CM.ready ? "calculé heure par heure par le modèle côtier (ombre des îles, fonds, marée)" : Math.round((s.shelter ?? 1) * 100) + " % de la houle du large arrive au bord (valeur fixe)"}</dd>
     <dt>Dangers</dt><dd>${esc(s.dangers)}</dd><dt>Notes</dt><dd>${esc(s.notes)}</dd></dl>
     <p class="m">Pour modifier ces critères : le doc <a href="https://claude.ai/artifact/WRi3Vq397kEE8tk5ay1vrA" target="_blank" rel="noopener">Critères des spots</a>.</p>`;
 }

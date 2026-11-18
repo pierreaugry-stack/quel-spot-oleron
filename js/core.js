@@ -115,11 +115,11 @@ function rateHour(spot, h, bias = 1) {
   const comps = [
     { h: h.sw.h * bias, p: h.sw.p, d: h.sw.d },
     { h: h.sw2.h == null ? null : h.sw2.h * bias, p: h.sw2.p, d: h.sw2.d },
-    { h: h.ww.h == null ? null : h.ww.h * bias, p: h.ww.p, d: h.ww.d, w: 0.6 }
+    { h: h.ww.h == null ? null : h.ww.h * bias, p: h.ww.p, d: h.ww.d, w: 0.6, wind: true }
   ];
   // hauteur « au large » vue du spot (critères du doc)
   const heff = Math.sqrt(comps.reduce((e, c) => c.h == null ? e : e + Math.pow(c.h * dirMult(c.d, spot) * (c.w ?? 1), 2), 0));
-  const surf = surfHeight(spot, comps);
+  const surf = (typeof CM !== "undefined" && CM.ready && surfCoast(spot, comps, h.wind, h.t)) || surfHeight(spot, comps);
   const E = energyOf(h.sw.h * bias, h.sw.p);
   const parts = {
     size: sizeScore(heff, spot.size), period: periodScore(h.sw.p, spot.periodMin),
@@ -325,6 +325,9 @@ function computeSkill() {
 async function loadAll() {
   S.errors = []; S.nowKey = parisKey();
   if (!S.cfg) S.cfg = await getJSON("spots.json?ts=" + Date.now(), 10000);
+  // modèle côtier (ombre des îles, fonds) : sert à la hauteur de surf des spots et à la carte
+  const pC = CM.ready ? null : Promise.all([getJSON("data/land.json", 15000), getJSON("data/bathy.json", 20000)])
+    .then(([land, bathy]) => { MV.land = land; buildCoast(land, bathy); }).catch(() => S.errors.push("Modèle côtier indisponible : hauteurs de surf estimées avec l'abri fixe."));
   try { S.tide = await loadTide(); } catch (e) { S.errors.push("Marée prévue indisponible."); S.tide = { map: new Map(), extremes: [], series: [] }; }
   const pF = loadSpotForecasts(S.cfg.spots).then(x => { S.spots = x; }).catch(e => S.errors.push("Prévisions indisponibles (" + e.message + ")."));
   const pO = loadObs().then(async o => {
@@ -333,7 +336,7 @@ async function loadAll() {
   }).catch(() => { S.obs = null; });
   const pB = loadBeacons().then(b => { S.beacons = b; }).catch(() => { S.beacons = []; S.errors.push("Balises de vent injoignables."); });
   const pG = loadGauge().then(g => { S.gauge = g; }).catch(() => { S.gauge = null; });
-  await Promise.all([pF, pO, pB, pG]);
+  await Promise.all([pF, pO, pB, pG, pC]);
   computeSkill(); scoreAll();
 }
 

@@ -184,3 +184,59 @@ function tideLevelAt(t) {
   const range = 2 + 3.5 * clamp(((tt.coef ?? 70) - 35) / 75, 0, 1);
   return (tt.n - 0.5) * range;
 }
+
+/* ---------- transfert côtier au point d'un spot ----------
+   Point de calcul : la cellule de mer la plus proche du spot avec 2 à 10 m d'eau à mi-marée
+   (là où la houle commence à déferler), sinon la cellule de mer la plus proche. */
+function spotCell(spot) {
+  if (!CM.ready) return null;
+  const ci = Math.floor((spot.lon - CM.X0) / CM.d), cj = Math.floor((spot.lat - CM.Y0) / CM.d);
+  let best = null, bestAny = null;
+  for (let r = 0; r <= 4; r++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+    if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue;
+    const i = ci + di, j = cj + dj; if (i < 0 || j < 0 || i >= CM.nx || j >= CM.ny) continue;
+    const k = j * CM.nx + i; if (CM.land[k]) continue;
+    const d = Math.hypot(di, dj), h = CM.depth[k] + CM.LAT;
+    if (!bestAny || d < bestAny.d) bestAny = { k, d };
+    if (h >= 2 && h <= 10 && (!best || d < best.d)) best = { k, d };
+  }
+  return (best || bestAny)?.k ?? null;
+}
+/* part de l'énergie d'une houle (direction, période) qui atteint la cellule : ombre + frottement,
+   moyennée sur les cellules voisines (diffraction) */
+function shadowAt(k, th, T) {
+  const { nx, NB } = CM, s = clamp(2 + (T - 6) * 1.5, 2, 20), feel = clamp((T - 7) / 6, 0, 1);
+  let tot = 0, cnt = 0;
+  for (const o of [0, 1, -1, nx, -nx]) {
+    const kk = k + o; if (kk < 0 || kk >= CM.n || CM.land[kk]) continue;
+    let num = 0, den = 0;
+    for (let b = 0; b < NB; b++) {
+      const dd = angDiff(b * 360 / NB, th); if (dd > 80) continue;
+      const w = Math.pow(Math.cos(dd * Math.PI / 360), 2 * s);
+      den += w; num += w * CM.open[kk * NB + b] * Math.exp(-CM.shal[kk * NB + b] / 12 - CM.mid[kk * NB + b] * feel / 40);
+    }
+    tot += (den ? num / den : 0) * (o === 0 ? 2 : 1); cnt += o === 0 ? 2 : 1;
+  }
+  return cnt ? tot / cnt : 0;
+}
+/* hauteur de surf au bord : chaque composante est atténuée par l'ombre et les fonds, puis déferle
+   selon Komar & Gaughan ; la mer du vent est limitée par le fetch local */
+function surfCoast(spot, comps, wind, t) {
+  if (spot._cell === undefined) spot._cell = spotCell(spot);
+  const k = spot._cell; if (k == null) return null;
+  let e = 0, kmain = null;
+  comps.forEach((c, i) => {
+    if (c.h == null || c.d == null) return;
+    let h = c.h, p = c.p ?? 8;
+    if (c.wind && wind?.v != null && wind.d != null) {
+      const U = wind.v / 3.6, b = Math.round(wind.d / (360 / CM.NB)) % CM.NB, F = CM.fetch[k * CM.NB + b] * 1000;
+      h = Math.min(h, 0.0016 * U * Math.sqrt(F / G0)); p = Math.max(2, 3.86 * Math.sqrt(h));
+    } else {
+      const kd = shadowAt(k, c.d, p); if (i === 0) kmain = kd; h *= Math.sqrt(kd);
+    }
+    e += Math.pow(breakH(h, p) * dirMult(c.d, spot) * (c.w ?? 1), 2);
+  });
+  const depth = CM.depth[k] + CM.LAT + tideLevelAt(t);
+  const hb = Math.min(Math.sqrt(e), 0.9 * Math.max(0.3, depth));
+  return { min: hb * 0.7, max: hb, kd: kmain, model: true };
+}
