@@ -24,12 +24,14 @@ def paris_to_utc(local: datetime) -> datetime:
     end = _last_sunday(local.year, 10).replace(hour=3)
     offset = 2 if start <= local < end else 1
     return (local - timedelta(hours=offset)).replace(tzinfo=timezone.utc)
-# Positions approximatives (Candhis ne les publie pas dans la page de la campagne).
+# Positions officielles (page « cartes » de Candhis). 01704 est muette depuis le 18/04/2026 :
+# gardée pour reprendre automatiquement si elle revient.
 BUOYS = [
-    {"id": "08504", "name": "Île d'Yeu Nord", "lat": 46.83, "lon": -2.29},
-    {"id": "08505", "name": "Noirmoutier", "lat": 46.92, "lon": -2.45},
-    {"id": "01705", "name": "Royan", "lat": 45.62, "lon": -1.12},
-    {"id": "03302", "name": "Cap Ferret", "lat": 44.65, "lon": -1.45},
+    {"id": "01704", "name": "Oléron Large", "lat": 45.9163, "lon": -1.8336, "depth": 50},
+    {"id": "08504", "name": "Île d'Yeu Nord", "lat": 46.8332, "lon": -2.2950, "depth": 9},
+    {"id": "08505", "name": "Noirmoutier", "lat": 46.9238, "lon": -2.4679, "depth": 18},
+    {"id": "01705", "name": "Royan", "lat": 45.6100, "lon": -1.0317, "depth": 14},
+    {"id": "03302", "name": "Cap Ferret", "lat": 44.6525, "lon": -1.4467, "depth": 54},
 ]
 FIELDS = {
     "H1/3 (m)": "hs",
@@ -81,7 +83,7 @@ def main(out: Path) -> int:
     result = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "buoys": []}
     ok = 0
     for b in BUOYS:
-        entry = dict(b, approx=True, series=[], error=None)
+        entry = dict(b, series=[], error=None)
         try:
             entry["series"] = parse(fetch(b["id"]))[-96:]
             ok += bool(entry["series"])

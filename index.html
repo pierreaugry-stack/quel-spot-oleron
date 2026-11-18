@@ -4,216 +4,208 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Quel spot à Oléron ?</title>
-<meta name="description" content="Tableau de bord surf d'Oléron et de la Côte Sauvage : meilleur spot maintenant, carte des prévisions de vent et de houle comparées aux balises et aux bouées.">
+<meta name="description" content="Classement des spots de surf d'Oléron et de la Côte Sauvage selon tes critères, prévisions heure par heure, carte de houle et de vent, bouées et vent en direct.">
+<meta name="theme-color" content="#0f1d22">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-/* Layout : tableau de bord (meilleur choix maintenant + classement), carte prévu/mesuré avec curseur horaire, comparaison prévu vs mesuré, créneaux, grille horaire, réglages. Une colonne sur téléphone. */
+/* Layout : barre d'onglets collante (Classement · Carte · Direct), contenu en une colonne large ; fiche spot en grilles 2 colonnes qui passent en 1 colonne sur téléphone. */
 :root{
-  --bg:#eef2f3; --panel:#ffffff; --fg:#10232b; --muted:#5b6f77; --line:#d6e0e3;
-  --accent:#0e6e8c; --sand:#f3e7cc; --obs:#1d2b31; --fc:#0e6e8c;
+  --bg:#eef2f3; --panel:#ffffff; --fg:#10232b; --muted:#5b6f77; --line:#d6e0e3; --grid:#e3eaec; --night:rgba(16,35,43,.06);
+  --accent:#0e6e8c; --tidefill:rgba(14,110,140,.12); --obs:#10232b; --obs2:#9aa9ae; --fc:#0e7fa3;
   --s0:#e3e8ea; --s1:#cfe0d9; --s2:#9fcfbd; --s3:#4fae95; --s4:#13806c; --s5:#0b5546;
-  --w1:#9cc9dd; --w2:#4f9fc2; --w3:#e2a33b; --w4:#d4612a; --w5:#a3262a;
-  --good:#13806c; --warn:#a85f00; --bad:#b3261e;
-  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --w1:#7fb6cf; --w2:#2f8fbd; --w3:#e2a33b; --w4:#d4612a; --w5:#a3262a;
+  --good:#13806c; --mid:#a86a00; --bad:#b3261e; --sand:#f3e7cc;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0c181c; --panel:#132328; --fg:#e4eef0; --muted:#93a8ae; --line:#24383e;
-  --accent:#5cc0de; --sand:#3a3424; --obs:#f2f6f7; --fc:#5cc0de;
+  --bg:#0c181c; --panel:#132328; --fg:#e4eef0; --muted:#93a8ae; --line:#24383e; --grid:#1f3237; --night:rgba(0,0,0,.25);
+  --accent:#5cc0de; --tidefill:rgba(92,192,222,.15); --obs:#eef4f5; --obs2:#6b7f85; --fc:#5cc0de;
   --s0:#1c2a2e; --s1:#1f3b35; --s2:#25594c; --s3:#2f8a72; --s4:#47b494; --s5:#7fdcbc;
   --w1:#5d93ab; --w2:#3f8fb5; --w3:#e0a548; --w4:#e07a45; --w5:#ff6b6b;
-  --good:#47b494; --warn:#f0a840; --bad:#ff8a80; color-scheme:dark}}
+  --good:#47b494; --mid:#f0a840; --bad:#ff8a80; --sand:#3a3424; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0c181c; --panel:#132328; --fg:#e4eef0; --muted:#93a8ae; --line:#24383e;
-  --accent:#5cc0de; --sand:#3a3424; --obs:#f2f6f7; --fc:#5cc0de;
+  --bg:#0c181c; --panel:#132328; --fg:#e4eef0; --muted:#93a8ae; --line:#24383e; --grid:#1f3237; --night:rgba(0,0,0,.25);
+  --accent:#5cc0de; --tidefill:rgba(92,192,222,.15); --obs:#eef4f5; --obs2:#6b7f85; --fc:#5cc0de;
   --s0:#1c2a2e; --s1:#1f3b35; --s2:#25594c; --s3:#2f8a72; --s4:#47b494; --s5:#7fdcbc;
   --w1:#5d93ab; --w2:#3f8fb5; --w3:#e0a548; --w4:#e07a45; --w5:#ff6b6b;
-  --good:#47b494; --warn:#f0a840; --bad:#ff8a80; color-scheme:dark}
+  --good:#47b494; --mid:#f0a840; --bad:#ff8a80; --sand:#3a3424; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:max(18px,env(safe-area-inset-top,0px)) max(32px,env(safe-area-inset-bottom,0px))}
-.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
-header{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;justify-content:space-between}
-h1{font:800 clamp(1.6rem,4.5vw,2.3rem)/1.05 var(--display);margin:0;letter-spacing:-.015em;text-wrap:balance}
-h2{font:700 1.15rem var(--display);margin:0 0 10px}
-.eyebrow{font:500 11.5px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.upd{display:flex;gap:10px;align-items:center;font:12.5px var(--mono);color:var(--muted);flex-wrap:wrap}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--body)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:1001;background:#0f1d22}
+a{color:var(--accent)}
 button{font:inherit;color:inherit}
-.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;cursor:pointer;font:500 13px var(--body)}
-.btn:hover{border-color:var(--accent)}
-.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:1000;background:#0f1d22;color:#e8f1f3}
+.topin{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font:800 1.15rem var(--display);letter-spacing:-.01em;color:#fff;text-decoration:none;margin-right:auto}
+.tabs{display:flex;gap:4px}
+.tabs a{color:#b8cbd0;text-decoration:none;font:600 14px var(--body);padding:7px 12px;border-radius:8px}
+.tabs a[aria-current="page"]{background:#e8f1f3;color:#0f1d22}
+.upd{display:flex;gap:8px;align-items:center;font:12px var(--mono);color:#93a8ae}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 11px;cursor:pointer;font:500 13px var(--body);color:var(--fg)}
+.top .btn{background:transparent;border-color:#34494f;color:#e8f1f3}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+main{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--display);margin:0}
+h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800;letter-spacing:-.015em;text-wrap:balance}
+h3{font-size:1.02rem;font-weight:700;margin-bottom:8px}
+.eyebrow{font:500 11.5px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.lede{margin:0;color:var(--muted);max-width:75ch}
+.m{font-size:12.5px;color:var(--muted);margin:0}
 .skel{color:var(--muted);font:13px var(--mono);padding:14px}
-.err{background:var(--sand);border-radius:10px;padding:10px 14px;font-size:13.5px}
-.note{font-size:12.5px;color:var(--muted);max-width:80ch;margin:0}
-.note a,.lnk{color:var(--accent)}
-.facts{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px;margin:0}
-.facts dt{font:12px var(--mono);color:var(--muted);padding-top:1px}
-.facts dd{margin:0;font-variant-numeric:tabular-nums}
-.arrow{display:inline-block;line-height:1}
-
-/* Tableau de bord */
-.dash{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px}
-@media (max-width:860px){.dash{grid-template-columns:1fr}}
-.hero{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.hero .row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.hero .big{font:800 3.2rem/1 var(--display);font-variant-numeric:tabular-nums;padding:10px 14px;border-radius:12px;min-width:96px;text-align:center}
-.hero h3{margin:0;font:800 clamp(1.5rem,4vw,2rem)/1.05 var(--display)}
-.hero .why{display:flex;flex-wrap:wrap;gap:6px}
-.pill{font:500 12.5px var(--body);border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
-.pill.good{border-color:var(--good);color:var(--good)} .pill.warn{border-color:var(--warn);color:var(--warn)} .pill.bad{border-color:var(--bad);color:var(--bad)}
-.rank{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.rk{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 6px;border-radius:8px;cursor:pointer;text-align:left;background:none;border:0}
-.rk:hover{background:var(--bg)}
-.rk .sc{font:800 1.15rem var(--display);text-align:center;border-radius:7px;padding:3px 0;font-variant-numeric:tabular-nums}
-.rk b{font:600 14px var(--body);display:block}
-.rk span{font:12px var(--mono);color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rk .lv{font:500 12px var(--body);color:var(--muted)}
-
-/* Carte */
-.mapbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:10px}
-.mapbar .grp{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.slider{display:flex;gap:10px;align-items:center;flex:1 1 320px;min-width:0}
-.slider input{flex:1;min-width:0;accent-color:var(--accent)}
-.slider output{font:600 13px var(--mono);white-space:nowrap;min-width:12ch}
-#map{height:min(68vh,600px);min-height:380px;border-radius:14px;border:1px solid var(--line);background:var(--panel);z-index:0}
-.leaflet-container{font:13px var(--body)}
-.basemap{filter:saturate(.55) brightness(1.03)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .basemap{filter:invert(.9) hue-rotate(180deg) saturate(.4) brightness(.95)}}
-:root[data-theme="dark"] .basemap{filter:invert(.9) hue-rotate(180deg) saturate(.4) brightness(.95)}
-.leaflet-popup-content{margin:10px 12px;min-width:200px}
-.leaflet-popup-content h4{margin:0 0 4px;font:700 14px var(--display)}
-.cmp{border-collapse:collapse;font-size:12.5px;width:100%;font-variant-numeric:tabular-nums}
-.cmp th,.cmp td{padding:3px 6px;border-bottom:1px solid #ccd6d9;text-align:right}
-.cmp th:first-child,.cmp td:first-child{text-align:left}
-.ico{background:none;border:0}
-.ico .lab{position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font:600 10.5px var(--mono);white-space:nowrap;color:#10232b;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff}
-.spotpin{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font:800 14px var(--display);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
-.buoypin{display:grid;place-items:center;width:30px;height:30px;border-radius:6px;background:#1d2b31;color:#fff;font:700 11px var(--mono);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font:12px var(--mono);color:var(--muted);margin-top:8px;align-items:center}
-.legend i{display:inline-block;width:18px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:4px}
-.stale{color:var(--warn)}
-
-/* Prévu vs mesuré */
-.cmpgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.ccard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:6px}
-.ccard h3{margin:0;font:700 1rem var(--display)}
-.ccard .m{font:12px var(--mono);color:var(--muted)}
-.vs{display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 10px;font-size:13px;font-variant-numeric:tabular-nums}
-.vs .h{font:11px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.vs .o{font-weight:600}
-.delta{font:600 12px var(--mono)}
-.ccard svg{width:100%;height:70px;display:block}
-
-/* Créneaux et grille */
-.slots{display:flex;flex-direction:column;gap:6px}
-.slot{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;text-align:left}
-.slot:hover{border-color:var(--accent)}
-.slot .sc{font:800 1.3rem var(--display);text-align:center;border-radius:8px;padding:3px 0;font-variant-numeric:tabular-nums}
-.slot b{font:600 14.5px var(--body)}
-.slot span{display:block;font:12.5px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.slot .when{font:500 13px var(--mono);text-align:right;white-space:nowrap}
-.days{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.err{background:var(--sand);border-radius:10px;padding:10px 14px;font-size:13.5px;margin-bottom:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;cursor:pointer;font:500 13px var(--body)}
 .chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.gridbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
-table.hg{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabular-nums;min-width:100%}
-.hg th{font:500 11.5px var(--mono);color:var(--muted);padding:6px 2px 2px;text-align:center;white-space:nowrap}
-.hg th.rowh{text-align:left;padding:0 8px;font:600 13px var(--body);color:var(--fg);position:sticky;left:0;background:var(--panel);min-width:130px;z-index:1}
-.hg td.cell{min-width:40px;height:40px;text-align:center;border-radius:6px;font:700 14px var(--display);cursor:pointer;position:relative}
-.hg td.cell.sel{outline:2px solid var(--fg);outline-offset:1px}
-.hg td.cell.nowc::after{content:"";position:absolute;left:50%;top:-5px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--accent)}
-.hg td.aux{font:11px var(--mono);color:var(--muted);text-align:center;height:22px;white-space:nowrap}
-.hg tr.auxrow th{font:11px var(--mono);color:var(--muted);text-align:left;padding:0 8px;position:sticky;left:0;background:var(--panel)}
-.detail{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 22px}
-.detail h3{margin:0;font:700 1.15rem var(--display);grid-column:1/-1}
-.detail h4{margin:0 0 4px;font:500 11.5px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.meter{display:grid;grid-template-columns:86px 1fr 38px;gap:8px;align-items:center;font-size:13px;margin:3px 0}
+.arrow{display:inline-block;line-height:1}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13.5px;margin:0}
+.facts dt{font:12px var(--mono);color:var(--muted);padding-top:1px}
+.facts dd{margin:0}
+.ax{font:10.5px var(--mono);fill:var(--muted)} .ax.strong{fill:var(--fg);font-weight:500}
+
+/* Classement */
+.ranking{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.rcard{display:grid;grid-template-columns:28px 76px minmax(0,1fr) 84px;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit}
+.rcard:hover{border-color:var(--accent)}
+.rcard.first{border-width:2px;border-color:var(--s4)}
+.rnum{font:800 1.2rem var(--display);color:var(--muted);text-align:center}
+.rscore{font:800 2rem/1 var(--display);border-radius:12px;padding:12px 0;text-align:center;font-variant-numeric:tabular-nums}
+.rtitle{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.rtitle b{font:700 1.2rem var(--display)} .rtitle span{font-size:13px;color:var(--muted)}
+.rfacts{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;margin-top:4px;font-variant-numeric:tabular-nums}
+.rfacts em{font:normal 11.5px var(--mono);color:var(--muted);margin-right:4px}
+.rstrip{display:flex;gap:2px;margin-top:8px}
+.rstrip i{flex:1;height:8px;border-radius:2px;min-width:4px}
+.rstrip i.now{outline:2px solid var(--fg);outline-offset:1px}
+.rconf{text-align:center;font:700 1.15rem var(--display);font-variant-numeric:tabular-nums}
+.rconf small{display:block;font:500 11px var(--mono);color:var(--muted)}
+.rconf.élevée,.confv.élevée{color:var(--good)} .rconf.moyenne,.confv.moyenne{color:var(--mid)} .rconf.faible,.confv.faible{color:var(--bad)}
+@media (max-width:640px){.rcard{grid-template-columns:62px minmax(0,1fr);gap:10px 12px}.rnum{display:none}.rconf{grid-column:2;text-align:left;font-size:.95rem}.rconf small{display:inline;margin-left:6px}.rscore{font-size:1.6rem;align-self:start}}
+
+/* Fiche spot */
+.back{font:600 13px var(--body);text-decoration:none}
+.shead{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.sname{font-size:clamp(1.6rem,4.5vw,2.3rem);font-weight:800;letter-spacing:-.015em}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.bigrow{display:flex;gap:14px;align-items:center;margin:6px 0 8px}
+.big{font:800 2.8rem/1 var(--display);padding:10px 14px;border-radius:12px;min-width:92px;text-align:center;font-variant-numeric:tabular-nums}
+.surfbig{font:800 1.7rem/1.1 var(--display);font-variant-numeric:tabular-nums}
+.confv{font:800 2.4rem/1 var(--display);font-variant-numeric:tabular-nums}
+.meter{display:grid;grid-template-columns:110px 1fr 42px;gap:8px;align-items:center;font-size:13px;margin-top:6px}
 .meter .bar{height:7px;border-radius:4px;background:var(--s0);overflow:hidden}
 .meter .bar span{display:block;height:100%;background:var(--s4)}
 .meter .v{font:12px var(--mono);text-align:right}
-.spots{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.spcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
-.spcard h3{margin:0 0 6px;font:700 1.05rem var(--display)}
-.spcard p{margin:8px 0 0;font-size:13px;color:var(--muted)}
-.scale{display:flex;gap:4px;align-items:center;font:11.5px var(--mono);color:var(--muted);flex-wrap:wrap;margin-top:8px}
-.scale i{width:22px;height:12px;border-radius:3px;display:inline-block}
+.hint{font-size:11.5px;color:var(--muted);margin:1px 0 0 118px}
+@media (max-width:520px){.hint{margin-left:0}}
+.hourchart{overflow-x:auto}
+.hc{width:100%;min-width:560px;display:block}
+.hc .hit{cursor:pointer}
+.htable-wrap{overflow-x:auto;margin-top:10px}
+.htable{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.htable th{font:500 11.5px var(--mono);color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.htable td{padding:5px 8px;border-bottom:1px solid var(--grid)}
+.htable tr{cursor:pointer} .htable tr.sel td{background:var(--night)} .htable tr.nightrow td{color:var(--muted)}
+.htable .sc{display:inline-block;min-width:38px;text-align:center;border-radius:6px;font:700 13px var(--display);padding:2px 0}
+.tc{width:100%;display:block}
+#tip{position:fixed;z-index:2000;background:var(--fg);color:var(--bg);font-size:12.5px;padding:7px 10px;border-radius:8px;pointer-events:none;line-height:1.45;max-width:260px}
+
+/* Carte */
+.fbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.slider{display:flex;gap:10px;align-items:center;flex:1 1 300px;min-width:0}
+.slider input{flex:1;min-width:0;accent-color:var(--accent)}
+.slider output{font:600 13px var(--mono);white-space:nowrap}
+#fmap{height:min(74vh,680px);min-height:420px;border-radius:14px;border:1px solid var(--line);background:#2b2d30}
+.fcanvas{position:absolute;left:0;top:0;pointer-events:none}
+.flegend{display:flex;flex-direction:column;gap:4px;font:12px var(--mono);color:var(--muted);max-width:420px}
+.ramp{height:10px;border-radius:5px}
+.rampl{display:flex;justify-content:space-between}
+.ico{background:none;border:0}
+.mpin{display:flex;align-items:center;gap:6px;transform:translate(-14px,-14px);text-decoration:none;white-space:nowrap}
+.mpin b{display:grid;place-items:center;min-width:30px;height:28px;padding:0 5px;border-radius:14px;background:var(--c);color:var(--i);font:800 13px var(--display);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.mpin span{font:600 11.5px var(--body);color:#fff;text-shadow:0 0 3px #000,0 0 3px #000}
+.leaflet-container{font:13px var(--body)}
+
+/* Direct */
+#dmap{height:340px;border-radius:14px;border:1px solid var(--line)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px}
+.dcard{display:flex;flex-direction:column;gap:8px}
+.dcard.down{opacity:.75}
+.dhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.dhead h3{margin:0}
+.tag{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--good);white-space:nowrap}
+.down .tag{color:var(--mid)}
+.kpis{display:flex;flex-wrap:wrap;gap:6px 18px}
+.kpis div{display:flex;flex-direction:column}
+.kpis b{font:700 1.15rem var(--display);font-variant-numeric:tabular-nums}
+.kpis span{font:11px var(--mono);color:var(--muted)}
+.lc{width:100%;height:auto;display:block}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font:11.5px var(--mono);color:var(--muted)}
+.leg i{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:3px;margin-right:5px}
+.leg i.dash{height:0;border-top:2px dashed;background:none}
+.dpin{transform:translate(-50%,-50%);display:inline-block;background:#10232b;color:#fff;font:700 11.5px var(--mono);padding:3px 7px;border-radius:6px;border:2px solid #fff;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.dpin.off{background:#8a969a} .dpin.wind{background:#0e6e8c} .dpin.tide{background:#5a4bb3}
+.dlab{transform:translate(-50%,-2px);font:600 11px var(--body);color:#10232b;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff}
+footer{max-width:1180px;margin:0 auto;padding-block:0 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <div class="eyebrow">Oléron · Côte Sauvage</div>
-      <h1>Quel spot à Oléron&nbsp;?</h1>
-    </div>
+<header class="top">
+  <div class="topin">
+    <a class="brand" href="#classement">Quel spot à Oléron ?</a>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#classement" data-v="classement">Classement</a>
+      <a href="#carte" data-v="carte">Carte</a>
+      <a href="#direct" data-v="direct">Direct</a>
+    </nav>
     <div class="upd"><span id="stamp">Chargement…</span><button class="btn" id="refresh" type="button">Actualiser</button></div>
-  </header>
-
+  </div>
+</header>
+<main>
   <div id="errors" class="err" hidden></div>
 
-  <section aria-labelledby="h-dash">
-    <h2 id="h-dash">Meilleur choix maintenant</h2>
-    <div class="dash">
-      <div class="hero" id="hero"><div class="skel">Calcul en cours…</div></div>
-      <div class="rank" id="rank" aria-label="Classement des spots maintenant"></div>
+  <section id="v-classement" aria-labelledby="h-rank">
+    <div><div class="eyebrow">Chassiron · Les Huttes · Saint-Denis · L'Écuissière · Côte Sauvage</div><h1 id="h-rank">Quel spot maintenant&nbsp;?</h1></div>
+    <div id="home"><div class="skel">Calcul du classement…</div></div>
+  </section>
+
+  <section id="v-spot" hidden aria-label="Fiche du spot"><div id="spotview"></div></section>
+
+  <section id="v-carte" hidden aria-labelledby="h-carte">
+    <div><div class="eyebrow">Prévisions Météo-France : vagues MFWAM, vent AROME/ARPEGE</div><h1 id="h-carte">Carte des prévisions</h1></div>
+    <div class="fbar">
+      <div class="chips" role="group" aria-label="Variable affichée"><button class="chip" type="button" data-fmode="wave" aria-pressed="true">Houle</button><button class="chip" type="button" data-fmode="wind" aria-pressed="false">Vent</button></div>
+      <div class="slider"><input type="range" id="fhour" min="0" max="0" value="0" aria-label="Heure affichée"><output id="fhourLabel" for="fhour">–</output></div>
+      <button class="btn" id="fplay" type="button" aria-pressed="false">▶ Lecture</button>
+      <button class="btn" id="fnow" type="button">Maintenant</button>
     </div>
+    <div id="fmap" role="region" aria-label="Carte de houle et de vent"></div>
+    <div class="flegend" id="flegend"></div>
+    <p class="m" id="fmapStatus"></p>
+    <p class="m">Les traits blancs suivent la direction de la houle (ou du vent) ; plus ils vont vite, plus la période (ou le vent) est forte. Chaque pastille donne la note du spot et la hauteur de surf estimée à l'heure choisie. Touchez une pastille pour ouvrir la fiche.</p>
   </section>
 
-  <section aria-labelledby="h-map">
-    <h2 id="h-map">Carte : prévu et mesuré</h2>
-    <div class="mapbar">
-      <div class="slider"><input type="range" id="hour" min="0" max="0" value="0" aria-label="Heure affichée"><output id="hourLabel" for="hour">–</output></div>
-      <div class="grp"><button class="btn" id="toNow" type="button">Maintenant</button></div>
-      <div class="grp" role="group" aria-label="Couches de la carte">
-        <button class="btn" type="button" data-layer="wind" aria-pressed="true">Vent prévu</button>
-        <button class="btn" type="button" data-layer="swell" aria-pressed="true">Houle prévue</button>
-        <button class="btn" type="button" data-layer="obs" aria-pressed="true">Mesures</button>
-      </div>
-    </div>
-    <div id="map" role="region" aria-label="Carte des prévisions et des mesures"></div>
-    <div class="legend" id="legend"></div>
+  <section id="v-direct" hidden aria-labelledby="h-direct">
+    <div><div class="eyebrow">Mesures réelles</div><h1 id="h-direct">Bouées, vent et marée en direct</h1><p class="m" id="directstamp"></p></div>
+    <div id="dmap" role="region" aria-label="Carte des capteurs"></div>
+    <div class="dgrid" id="directcards"><div class="skel">Interrogation des capteurs…</div></div>
   </section>
-
-  <section aria-labelledby="h-cmp">
-    <h2 id="h-cmp">Prévu ou mesuré : est-ce que la prévision colle&nbsp;?</h2>
-    <div class="cmpgrid" id="cmp"><div class="skel">Interrogation des bouées et des balises…</div></div>
-  </section>
-
-  <section aria-labelledby="h-slots">
-    <h2 id="h-slots">Meilleurs créneaux des 5 prochains jours</h2>
-    <div class="slots" id="slots"></div>
-  </section>
-
-  <section aria-labelledby="h-grid">
-    <h2 id="h-grid">Heure par heure</h2>
-    <div class="days" id="days" role="group" aria-label="Choisir le jour"></div>
-    <div class="gridbox"><table class="hg" id="grid"></table></div>
-    <div class="scale" id="scale"></div>
-  </section>
-
-  <section aria-labelledby="h-detail">
-    <h2 id="h-detail">Détail du créneau</h2>
-    <div class="detail" id="detail"><div class="skel">Touchez une case de la grille.</div></div>
-  </section>
-
-  <section aria-labelledby="h-spots">
-    <h2 id="h-spots">Réglages des spots</h2>
-    <p class="note" style="margin-bottom:10px">Les critères viennent du doc <a class="lnk" href="https://claude.ai/artifact/WRi3Vq397kEE8tk5ay1vrA" target="_blank" rel="noopener">Critères des spots</a> et sont enregistrés dans <code>spots.json</code>.</p>
-    <div class="spots" id="spots"></div>
-  </section>
-
-  <p class="note">
-    Prévisions : <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (vagues Météo-France et ECMWF, vent AROME Météo-France sur 48 h puis meilleur modèle disponible). Bouées : <a href="https://candhis.cerema.fr/" target="_blank" rel="noopener">Candhis / Cerema</a>, relevées toutes les 30 min, positions approximatives. Vent mesuré : balises <a href="https://www.openwindmap.org/" target="_blank" rel="noopener">OpenWindMap / Pioupiou</a> (© contributeurs OpenWindMap). Marée mesurée : marégraphe <a href="https://data.shom.fr/" target="_blank" rel="noopener">SHOM</a> de La Cotinière. Marée et coefficient prévus : estimation Open-Meteo, pas pour la navigation. Fond de carte © contributeurs OpenStreetMap. La note est un calcul automatique : regardez toujours l'eau avant d'y aller.
-  </p>
-</div>
+</main>
+<footer>
+  <p>Prévisions : <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, qui redistribue les modèles Météo-France (vagues MFWAM, vent AROME HD 1,3 km sur 48 h puis AROME / ARPEGE), DWD (vagues EWAM) et ECMWF (vent) ; les deux derniers servent à l'indice de confiance. Bouées : <a href="https://candhis.cerema.fr/" target="_blank" rel="noopener">Candhis / Cerema</a>, relevées toutes les 30 min. Vent mesuré : <a href="https://www.openwindmap.org/" target="_blank" rel="noopener">OpenWindMap / Pioupiou</a> (© contributeurs OpenWindMap). Marée mesurée : <a href="https://data.shom.fr/" target="_blank" rel="noopener">SHOM</a>. Marée et coefficient prévus : estimation, pas pour la navigation. Hauteur de surf : formule de Komar et Gaughan (1972) appliquée à chaque houle, puis coefficient d'abri du spot. Regardez toujours l'eau avant d'y aller.</p>
+</footer>
+<div id="tip" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="app.js"></script>
+<script src="js/core.js?v=3.2"></script>
+<script src="js/map.js?v=3.2"></script>
+<script src="js/views.js?v=3.2"></script>
+<script src="js/main.js?v=3.2"></script>
 </body>
 </html>

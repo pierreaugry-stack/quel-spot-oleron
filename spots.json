@@ -1,66 +1,234 @@
 {
-  "_doc": "Critères de notation. Source de vérité éditable : le doc « Critères des spots – Oléron et Côte Sauvage » (https://claude.ai/artifact/WRi3Vq397kEE8tk5ay1vrA). Directions en degrés, d'où vient la houle ou le vent. Tailles en m de houle au large. Marée en fraction du marnage du jour (0 = basse mer, 1 = pleine mer). Énergie en kW/m (0,49 × H² × T).",
-  "updated": "2026-11-18",
-  "spots": [
-    {
-      "id": "chassiron", "name": "Chassiron", "area": "Pointe nord d'Oléron",
-      "lat": 46.047, "lon": -1.408, "marine": [46.08, -1.46], "wind": [46.046, -1.411],
-      "swell": { "ideal": 300, "window": 35 },
-      "size": [0.5, 1.4, 2.6, 3.6], "periodMin": 8, "energy": null,
-      "wind_": { "offshore": 160, "maxOffshore": 35 },
-      "tide": { "lo": 0.45, "hi": 0.95, "prefer": "montante" },
-      "coef": { "min": null, "max": 95 },
-      "level": "Confirmé", "type": "Récif rocheux devant le phare",
-      "dangers": "Oursins, courants (forts par gros coefficient), peu d'eau sur la roche, filets. Ne jamais surfer seul.",
-      "notes": "500 m de marche sur le récif. Gauches assez longues, droites plus courtes et violentes."
-    },
-    {
-      "id": "seulieres", "name": "Les Seulières", "area": "Saint-Denis-d'Oléron, côte nord-ouest",
-      "lat": 46.032, "lon": -1.404, "marine": [46.04, -1.46], "wind": [46.032, -1.404],
-      "swell": { "ideal": 285, "window": 40 },
-      "size": [0.5, 0.9, 1.9, 2.8], "periodMin": 9, "energy": null,
-      "wind_": { "offshore": 75, "maxOffshore": 35 },
-      "tide": { "lo": 0.5, "hi": 0.85, "prefer": "montante" },
-      "coef": { "min": null, "max": null },
-      "level": "Tous niveaux", "type": "Beach break, bancs de sable",
-      "dangers": "Aucun signalé.",
-      "notes": "Plage non surveillée. Zone de kite au nord des Huttes."
-    },
-    {
-      "id": "stdenis", "name": "Saint-Denis, le port", "area": "Pertuis d'Antioche, abrité",
-      "lat": 46.032, "lon": -1.368, "marine": [46.08, -1.46], "wind": [46.032, -1.368],
-      "swell": { "ideal": 290, "window": 40 },
-      "size": [2.5, 3.5, 5, 7], "periodMin": 12, "energy": { "min": 40, "max": null },
-      "wind_": { "offshore": 250, "maxOffshore": 60 },
-      "tide": { "lo": 0.55, "hi": 1.0, "prefer": null },
-      "coef": { "min": null, "max": null },
-      "level": "À définir", "type": "Gauches qui déroulent le long du port",
-      "dangers": "Digue, bateaux et chenaux du port (à confirmer).",
-      "notes": "Plat la plupart du temps. Marche quand une grosse houle d'ouest contourne Chassiron ; vent d'ouest offshore. Taille mesurée au large."
-    },
-    {
-      "id": "ecuissiere", "name": "L'Écuissière", "area": "Dolus-d'Oléron, côte ouest",
-      "lat": 45.893, "lon": -1.302, "marine": [45.88, -1.36], "wind": [45.893, -1.302],
-      "swell": { "ideal": 270, "window": 40 },
-      "size": [0.6, 1.0, 2.0, 2.8], "periodMin": 9, "energy": null,
-      "wind_": { "offshore": 75, "maxOffshore": 35 },
-      "tide": { "lo": 0.6, "hi": 1.0, "prefer": null },
-      "coef": { "min": null, "max": null },
-      "level": "À définir", "type": "Plage de sable, platier rocheux à marée basse",
-      "dangers": "Platier rocheux à marée basse ; plage jamais surveillée.",
-      "notes": "Se surfe à marée haute."
-    },
-    {
-      "id": "sauvage", "name": "Côte Sauvage", "area": "La Tremblade (Bouverie, Pointe Espagnole)",
-      "lat": 45.765, "lon": -1.238, "marine": [45.76, -1.31], "wind": [45.765, -1.238],
-      "swell": { "ideal": 270, "window": 40 },
-      "size": [0.5, 0.9, 2.0, 3.0], "periodMin": 9, "energy": null,
-      "wind_": { "offshore": 85, "maxOffshore": 35 },
-      "tide": { "lo": 0.4, "hi": 0.75, "prefer": "montante" },
-      "coef": { "min": null, "max": null },
-      "level": "Intermédiaire", "type": "Beach break exposé, baïnes",
-      "dangers": "Baïnes, courants forts (surtout à la descendante et par gros coefficient).",
-      "notes": "Rarement bondé. Souvent insurfable l'hiver quand c'est gros."
-    }
-  ]
+ "_doc": "Critères de notation. Source de vérité éditable : le doc « Critères des spots – Oléron et Côte Sauvage » (https://claude.ai/artifact/WRi3Vq397kEE8tk5ay1vrA). Directions en degrés, d'où vient la houle ou le vent. Tailles en m de houle au large. Marée en fraction du marnage du jour (0 = basse mer, 1 = pleine mer). Énergie en kW/m (0,49 × H² × T). shelter = part de la houle du large qui arrive au bord (réfraction, abri), pour la hauteur de surf affichée.",
+ "updated": "2026-11-18",
+ "spots": [
+  {
+   "id": "chassiron",
+   "name": "Chassiron",
+   "area": "Pointe nord d'Oléron",
+   "lat": 46.047,
+   "lon": -1.408,
+   "marine": [
+    46.08,
+    -1.46
+   ],
+   "wind": [
+    46.046,
+    -1.411
+   ],
+   "swell": {
+    "ideal": 300,
+    "window": 35
+   },
+   "size": [
+    0.5,
+    1.4,
+    2.6,
+    3.6
+   ],
+   "periodMin": 8,
+   "energy": null,
+   "wind_": {
+    "offshore": 160,
+    "maxOffshore": 35
+   },
+   "tide": {
+    "lo": 0.45,
+    "hi": 0.95,
+    "prefer": "montante"
+   },
+   "coef": {
+    "min": null,
+    "max": 95
+   },
+   "level": "Confirmé",
+   "type": "Récif rocheux devant le phare",
+   "dangers": "Oursins, courants (forts par gros coefficient), peu d'eau sur la roche, filets. Ne jamais surfer seul.",
+   "notes": "500 m de marche sur le récif. Gauches assez longues, droites plus courtes et violentes.",
+   "shelter": 0.9
+  },
+  {
+   "id": "huttes",
+   "name": "Les Huttes",
+   "area": "Saint-Denis-d'Oléron, côte ouest",
+   "lat": 46.003,
+   "lon": -1.389,
+   "marine": [
+    46.0,
+    -1.47
+   ],
+   "wind": [
+    46.003,
+    -1.389
+   ],
+   "swell": {
+    "ideal": 285,
+    "window": 40
+   },
+   "size": [
+    0.5,
+    0.9,
+    1.9,
+    2.8
+   ],
+   "periodMin": 9,
+   "energy": null,
+   "wind_": {
+    "offshore": 75,
+    "maxOffshore": 35
+   },
+   "tide": {
+    "lo": 0.5,
+    "hi": 0.85,
+    "prefer": "montante"
+   },
+   "coef": {
+    "min": null,
+    "max": null
+   },
+   "level": "Tous niveaux",
+   "type": "Beach break, bancs de sable",
+   "dangers": "Aucun signalé.",
+   "notes": "Plage non surveillée. Zone de kite au nord des Huttes.",
+   "shelter": 0.85
+  },
+  {
+   "id": "stdenis",
+   "name": "Saint-Denis, le port",
+   "area": "Pertuis d'Antioche, abrité",
+   "lat": 46.032,
+   "lon": -1.368,
+   "marine": [
+    46.08,
+    -1.46
+   ],
+   "wind": [
+    46.032,
+    -1.368
+   ],
+   "swell": {
+    "ideal": 290,
+    "window": 40
+   },
+   "size": [
+    2.5,
+    3.5,
+    5,
+    7
+   ],
+   "periodMin": 12,
+   "energy": {
+    "min": 40,
+    "max": null
+   },
+   "wind_": {
+    "offshore": 250,
+    "maxOffshore": 60
+   },
+   "tide": {
+    "lo": 0.55,
+    "hi": 1.0,
+    "prefer": null
+   },
+   "coef": {
+    "min": null,
+    "max": null
+   },
+   "level": "À définir",
+   "type": "Gauches qui déroulent le long du port",
+   "dangers": "Digue, bateaux et chenaux du port (à confirmer).",
+   "notes": "Plat la plupart du temps. Marche quand une grosse houle d'ouest contourne Chassiron ; vent d'ouest offshore. Taille mesurée au large.",
+   "shelter": 0.3
+  },
+  {
+   "id": "ecuissiere",
+   "name": "L'Écuissière",
+   "area": "Dolus-d'Oléron, côte ouest",
+   "lat": 45.893,
+   "lon": -1.302,
+   "marine": [
+    45.88,
+    -1.36
+   ],
+   "wind": [
+    45.893,
+    -1.302
+   ],
+   "swell": {
+    "ideal": 270,
+    "window": 40
+   },
+   "size": [
+    0.6,
+    1.0,
+    2.0,
+    2.8
+   ],
+   "periodMin": 9,
+   "energy": null,
+   "wind_": {
+    "offshore": 75,
+    "maxOffshore": 35
+   },
+   "tide": {
+    "lo": 0.6,
+    "hi": 1.0,
+    "prefer": null
+   },
+   "coef": {
+    "min": null,
+    "max": null
+   },
+   "level": "À définir",
+   "type": "Plage de sable, platier rocheux à marée basse",
+   "dangers": "Platier rocheux à marée basse ; plage jamais surveillée.",
+   "notes": "Se surfe à marée haute.",
+   "shelter": 0.75
+  },
+  {
+   "id": "sauvage",
+   "name": "Côte Sauvage",
+   "area": "La Tremblade (Bouverie, Pointe Espagnole)",
+   "lat": 45.765,
+   "lon": -1.238,
+   "marine": [
+    45.76,
+    -1.31
+   ],
+   "wind": [
+    45.765,
+    -1.238
+   ],
+   "swell": {
+    "ideal": 270,
+    "window": 40
+   },
+   "size": [
+    0.5,
+    0.9,
+    2.0,
+    3.0
+   ],
+   "periodMin": 9,
+   "energy": null,
+   "wind_": {
+    "offshore": 85,
+    "maxOffshore": 35
+   },
+   "tide": {
+    "lo": 0.4,
+    "hi": 0.75,
+    "prefer": "montante"
+   },
+   "coef": {
+    "min": null,
+    "max": null
+   },
+   "level": "Intermédiaire",
+   "type": "Beach break exposé, baïnes",
+   "dangers": "Baïnes, courants forts (surtout à la descendante et par gros coefficient).",
+   "notes": "Rarement bondé. Souvent insurfable l'hiver quand c'est gros.",
+   "shelter": 0.95
+  }
+ ]
 }
