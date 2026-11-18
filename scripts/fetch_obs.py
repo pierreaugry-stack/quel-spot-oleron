@@ -109,7 +109,12 @@ def fetch_mf(key: str) -> list:
             data = json.loads(r.read().decode("utf-8"))
         return data if isinstance(data, list) else [data]
     try:
-        rows = get(MF_URL)
+        try:
+            rows = get(MF_URL.replace("/v1/", "/v2/"))  # le portail affiche la version 2
+        except urllib.error.HTTPError as e0:
+            if e0.code in (401, 403):
+                raise
+            rows = get(MF_URL)
     except urllib.error.HTTPError as e:
         print(f"Package Observations : erreur {e.code}, repli sur Données d'observation")
         rows = []
