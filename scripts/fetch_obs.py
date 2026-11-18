@@ -108,23 +108,32 @@ def fetch_mf(key: str) -> list:
         with urllib.request.urlopen(req, timeout=60) as r:
             data = json.loads(r.read().decode("utf-8"))
         return data if isinstance(data, list) else [data]
-    try:
+
+    def attempt(label, url):
         try:
-            rows = get(MF_URL.replace("/v1/", "/v2/"))  # le portail affiche la version 2
-        except urllib.error.HTTPError as e0:
-            if e0.code in (401, 403):
-                raise
-            rows = get(MF_URL)
-    except urllib.error.HTTPError as e:
-        print(f"Package Observations : erreur {e.code}, repli sur Données d'observation")
+            rows = get(url)
+            print(f"{label} : OK ({len(rows)} lignes)")
+            return rows
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace")[:300].replace(key, "***")
+            print(f"{label} : erreur {e.code} {body}")
+            return None
+
+    base = "https://public-api.meteofrance.fr/public/DPPaquetObs/{v}/paquet/infrahoraire-6m?{p}=17&format=json"
+    for v in ("v2", "v1"):
+        for p in ("id-departement", "id_departement"):
+            rows = attempt(f"Package Observations {v} {p}", base.format(v=v, p=p))
+            if rows:
+                break
+        if rows:
+            break
+    if not rows:
         rows = []
         for st in MF_STATIONS:
-            try:
-                rows += get(MF_STATION_URL.format(id=st["id"]))
-            except urllib.error.HTTPError as e2:
-                if e2.code in (401, 403):
-                    raise
-                print(f"Station {st['id']} : erreur {e2.code}")
+            r = attempt(f"Données d'observation {st['id']}", MF_STATION_URL.format(id=st["id"]))
+            rows += r or []
+        if not rows:
+            raise RuntimeError("aucune réponse exploitable de Météo-France")
     out = []
     for st in MF_STATIONS:
         series = []
