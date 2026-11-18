@@ -330,7 +330,7 @@ async function loadAll() {
     .then(([land, bathy]) => { MV.land = land; buildCoast(land, bathy); }).catch(() => S.errors.push("Modèle côtier indisponible : hauteurs de surf estimées avec l'abri fixe."));
   try { S.tide = await loadTide(); } catch (e) { S.errors.push("Marée prévue indisponible."); S.tide = { map: new Map(), extremes: [], series: [] }; }
   const pF = loadSpotForecasts(S.cfg.spots).then(x => { S.spots = x; }).catch(e => S.errors.push("Prévisions indisponibles (" + e.message + ")."));
-  const pW = getJSON(`data/ww3_spots.json?ts=${Math.floor(Date.now() / 18e5)}`, 15000).then(w => { S.ww3 = w; S.ww3idx = new Map(w.times.map((t, i) => [t.slice(0, 13), i])); }).catch(() => { S.ww3 = null; });
+  const pW = getJSON(`data/ww3_spots.json?ts=${Math.floor(Date.now() / 18e5)}`, 15000).then(w => { S.ww3 = w; S.ww3ms = w.times.map(t => Date.parse(t)); }).catch(() => { S.ww3 = null; });
   const pO = loadObs().then(async o => {
     S.obs = o;
     [S.buoyFc, S.stationFc] = await Promise.all([loadBuoyForecast(o.buoys).catch(() => null), loadStationForecast(o.stations || []).catch(() => null)]);
@@ -408,7 +408,9 @@ function calibrateTide() {
 const utcHourKey = t => new Date(t + ":00").toISOString().slice(0, 13);
 function ww3At(spotId, t) {
   const w = S.ww3, s = w?.spots?.[spotId]; if (!s) return null;
-  const i = S.ww3idx.get(utcHourKey(t)); if (i == null || s.hs?.[i] == null) return null;
+  const ms = new Date(t + ":00").getTime(); let i = null, d = Infinity;
+  S.ww3ms.forEach((x, k) => { const e = Math.abs(x - ms); if (e < d) { d = e; i = k; } });
+  if (d > 5.4e6 || s.hs?.[i] == null) return null;
   const g = k => s[k]?.[i] ?? null;
   return { hs: g("hs"), tp: g("tp"), dir: g("dir"), parts: [0, 1, 2].map(p => ({ h: g("hs" + p), p: g("tp" + p), d: g("dir" + p) })).filter(x => x.h != null && x.h > 0.05) };
 }

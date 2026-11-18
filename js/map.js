@@ -180,10 +180,12 @@ function drawCoast(ctx, dpr) {
 }
 /* ---------- houle côtière WaveWatch III (data/ww3.json, grille 0,01°, octets en base64) ---------- */
 const W3 = { data: null, cache: new Map() };
-async function loadWW3Grid() { try { W3.data = await getJSON(`data/ww3.json?ts=${Math.floor(Date.now() / 18e5)}`, 30000); W3.idx = new Map(W3.data.times.map((t, i) => [t.slice(0, 13), i])); } catch (e) { W3.data = null; } }
+async function loadWW3Grid() { try { W3.data = await getJSON(`data/ww3.json?ts=${Math.floor(Date.now() / 18e5)}`, 30000); W3.ms = W3.data.times.map(t => Date.parse(t)); } catch (e) { W3.data = null; } }
+/* échéance WW3 la plus proche (pas horaire puis tri-horaire), à 1 h 30 près */
+function nearestIdx(msArr, ms) { let b = -1, d = Infinity; msArr.forEach((x, i) => { const e = Math.abs(x - ms); if (e < d) { d = e; b = i; } }); return d <= 5.4e6 ? b : null; }
 function ww3Hour(idx) {
   if (!W3.data) return null;
-  const k = W3.idx.get(new Date(MV.times[idx] + ":00").toISOString().slice(0, 13)); if (k == null) return null;
+  const k = nearestIdx(W3.ms, new Date(MV.times[idx] + ":00").getTime()); if (k == null) return null;
   if (!W3.cache.has(k)) {
     const dec = b => { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
     W3.cache.set(k, { hs: dec(W3.data.hs[k]), dir: dec(W3.data.dir[k]), tp: dec(W3.data.tp[k]) });

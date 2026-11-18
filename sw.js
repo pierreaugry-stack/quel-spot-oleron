@@ -2,7 +2,7 @@
    - fichiers de l'appli (pages, scripts, icônes, fonds, bathymétrie) : servis du cache, mis à jour en arrière-plan ;
    - données (prévisions, mesures, grille) : réseau d'abord, cache si pas de réseau ;
    - envois (reviews, photos) : jamais mis en cache. */
-const VERSION = "v4-4";
+const VERSION = "v4-5";
 const SHELL = `shell-${VERSION}`, DATA = `data-${VERSION}`;
 const DATA_HOSTS = ["api.open-meteo.com", "marine-api.open-meteo.com", "api.pioupiou.fr", "services.data.shom.fr"];
 

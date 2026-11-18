@@ -66,7 +66,7 @@ def main(out_dir="data"):
     lat, lon = ds["latitude"][:].astype("float64"), ds["longitude"][:].astype("float64")
     t = ds["time"][:]
     t0 = datetime(1990, 1, 1, tzinfo=timezone.utc)
-    times = [(t0 + timedelta(days=float(x))).replace(minute=0, second=0, microsecond=0) for x in t]
+    times = [(t0 + timedelta(days=float(x), minutes=30)).replace(minute=0, second=0, microsecond=0) for x in t]  # arrondi à l'heure la plus proche
     m = (lat > BOX["lat0"] - 0.1) & (lat < BOX["lat1"] + 0.1) & (lon > BOX["lon0"] - 0.1) & (lon < BOX["lon1"] + 0.1)
     idx = np.where(m)[0]
     print(len(idx), "nœuds dans la zone sur", len(lat))
