@@ -148,7 +148,7 @@ def fetch_mf(key: str) -> list:
             if str(row.get("geo_id_insee")) != st["id"]:
                 continue
             ff, dd = num(row.get("ff")), num(row.get("dd"))
-            gust = next((num(row.get(f)) for f in ("fxi10", "fxi", "fxi3s", "fxy", "fx") if num(row.get(f)) is not None), None)
+            gust = next((num(row.get(f)) for f in ("raf10", "fxi10", "fxi") if num(row.get(f)) is not None), None)
             t = row.get("validity_time") or row.get("reference_time")
             if t is None or ff is None:
                 continue
