@@ -28,6 +28,13 @@ def get(path):
         return {"_error": e.code, "_body": e.read()[:300].decode("utf-8", "replace").replace(KEY, "***")}
 
 
+def data_links(doc):
+    """identifiants des sous-documents (liens rel=data), dernier segment de l'URL"""
+    if not isinstance(doc, dict):
+        return []
+    return [l["href"].rstrip("/").split("/")[-1] for l in doc.get("links", []) if l.get("rel", "").endswith("/data")]
+
+
 def short(x, n=1500):
     s = json.dumps(x, ensure_ascii=False)
     return s if len(s) <= n else s[:n] + "…"
@@ -41,27 +48,15 @@ def main():
         print("modèle :", short(get(f"/models/{m}"), 800))
         grids = get(f"/models/{m}/grids")
         print("grilles :", short(grids, 1200))
-        ids = []
-        if isinstance(grids, list):
-            ids = [g.get("grid", g.get("id", g)) if isinstance(g, dict) else g for g in grids]
-        elif isinstance(grids, dict):
-            for k in ("grids", "links", "items"):
-                if isinstance(grids.get(k), list):
-                    ids = [g.get("grid", g.get("id", g)) if isinstance(g, dict) else g for g in grids[k]]
+        ids = data_links(grids)
         for g in ids[:6]:
             print(f"\n--- {m} grille {g}")
             print("description :", short(get(f"/models/{m}/grids/{g}"), 900))
             pk = get(f"/models/{m}/grids/{g}/packages")
             print("paquets :", short(pk, 900))
-            names = []
-            if isinstance(pk, list):
-                names = [p.get("package", p.get("id", p)) if isinstance(p, dict) else p for p in pk]
-            elif isinstance(pk, dict):
-                for k in ("packages", "links", "items"):
-                    if isinstance(pk.get(k), list):
-                        names = [p.get("package", p.get("id", p)) if isinstance(p, dict) else p for p in pk[k]]
+            names = data_links(pk)
             for p in names[:4]:
-                print(f"paquet {p} :", short(get(f"/models/{m}/grids/{g}/packages/{p}"), 1500))
+                print(f"paquet {p} :", short(get(f"/models/{m}/grids/{g}/packages/{p}"), 2500))
     return 0
 
 
