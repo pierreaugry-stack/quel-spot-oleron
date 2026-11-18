@@ -9,13 +9,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -32,10 +32,24 @@ jobs:
         env:
           MF_API_KEY: ${{ secrets.MF_API_KEY }}
         run: python scripts/fetch_obs.py data/obs.json
+      - name: Archive des mesures (branche archive)
+        run: |
+          git fetch -q origin archive:archive || true
+          if git show-ref --verify --quiet refs/heads/archive; then
+            git worktree add -q arch archive
+          else
+            git worktree add -q --orphan -b archive arch
+          fi
+          python scripts/archive_obs.py data/obs.json arch/obs
+          cd arch
+          git add obs
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Archive des mesures" || true
+          git push -q origin archive || echo "archive non poussée"
       - name: Préparer le site
         run: |
-          mkdir -p _site
+          mkdir -p _site/archive
           cp -r index.html js spots.json data .nojekyll _site/
+          cp -r arch/obs _site/archive/ || true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

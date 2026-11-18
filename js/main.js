@@ -1,7 +1,7 @@
 "use strict";
 /* Navigation par onglets (#classement, #spot-<id>, #carte, #direct) et démarrage. */
 
-const VIEWS = ["classement", "spot", "carte", "direct"];
+const VIEWS = ["classement", "spot", "carte", "direct", "reviews"];
 let LOADED = false;
 function route() {
   const h = (location.hash || "#classement").slice(1);
@@ -14,6 +14,7 @@ function route() {
   if (view === "spot") { renderSpot(h.slice(5)); window.scrollTo(0, 0); }
   if (view === "carte") showForecastMap();
   if (view === "direct") renderDirect();
+  if (view === "reviews") renderReviews();
 }
 window.addEventListener("hashchange", route);
 
