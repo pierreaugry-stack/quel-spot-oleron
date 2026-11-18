@@ -8,6 +8,7 @@ et données réelles (bouées, vent, marée).
 - `spots.json` : critères des spots (source éditable : le doc « Critères des spots »)
 - `scripts/fetch_obs.py` : relève des bouées Candhis, lancée toutes les 30 min par GitHub Actions
 - `scripts/build_land.py` : trait de côte (OpenStreetMap) pour masquer la terre sur la carte
+- `scripts/build_bathy.py` : bathymétrie EMODnet pour le modèle côtier (`js/coast.js`)
 - `data/` : mesures des bouées et polygones de terre
 
 Sources : Open-Meteo (Météo-France MFWAM et AROME HD 1,3 km, DWD EWAM, ECMWF), Candhis/Cerema,

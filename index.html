@@ -179,9 +179,15 @@ footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
   <section id="v-spot" hidden aria-label="Fiche du spot"><div id="spotview"></div></section>
 
   <section id="v-carte" hidden aria-labelledby="h-carte">
-    <div><div class="eyebrow">Prévisions Météo-France : vagues MFWAM, vent AROME/ARPEGE</div><h1 id="h-carte">Carte des prévisions</h1></div>
+    <div><div class="eyebrow">Houle Météo-France MFWAM + modèle côtier · vent AROME HD</div><h1 id="h-carte">Carte des prévisions</h1></div>
     <div class="fbar">
-      <div class="chips" role="group" aria-label="Variable affichée"><button class="chip" type="button" data-fmode="wave" aria-pressed="true">Houle</button><button class="chip" type="button" data-fmode="wind" aria-pressed="false">Vent</button></div>
+      <div class="chips" role="group" aria-label="Couche affichée">
+        <button class="chip" type="button" data-fmode="wind" aria-pressed="false">Vent</button>
+        <button class="chip" type="button" data-fmode="hs" aria-pressed="true">Hauteur des vagues</button>
+        <button class="chip" type="button" data-fmode="energy" aria-pressed="false">Énergie</button>
+        <button class="chip" type="button" data-fmode="period" aria-pressed="false">Période</button>
+      </div>
+      <button class="btn" id="fpart" type="button" aria-pressed="true">Vent animé</button>
       <div class="slider"><input type="range" id="fhour" min="0" max="0" value="0" aria-label="Heure affichée"><output id="fhourLabel" for="fhour">–</output></div>
       <button class="btn" id="fplay" type="button" aria-pressed="false">▶ Lecture</button>
       <button class="btn" id="fnow" type="button">Maintenant</button>
@@ -189,7 +195,7 @@ footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
     <div id="fmap" role="region" aria-label="Carte de houle et de vent"></div>
     <div class="flegend" id="flegend"></div>
     <p class="m" id="fmapStatus"></p>
-    <p class="m">Les traits blancs suivent la direction de la houle (ou du vent) ; plus ils vont vite, plus la période (ou le vent) est forte. Chaque pastille donne la note du spot et la hauteur de surf estimée à l'heure choisie. Touchez une pastille pour ouvrir la fiche.</p>
+    <p class="m">Les traits blancs montrent le vent (sens et force). Les couleurs de houle viennent d'un modèle côtier qui part de la houle du large Météo-France et ajoute l'ombre des îles, la réfraction et la levée sur les fonds (bathymétrie EMODnet), le frottement sur les petits fonds, la marée et la mer du vent créée sur place selon la distance à la côte. Touchez un point de la mer pour lire les valeurs ; touchez une pastille pour ouvrir la fiche du spot.</p>
   </section>
 
   <section id="v-direct" hidden aria-labelledby="h-direct">
@@ -199,13 +205,14 @@ footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
   </section>
 </main>
 <footer>
-  <p>Prévisions : <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, qui redistribue les modèles Météo-France (vagues MFWAM, vent AROME HD 1,3 km sur 48 h puis AROME / ARPEGE), DWD (vagues EWAM) et ECMWF (vent) ; les deux derniers servent à l'indice de confiance. Bouées : <a href="https://candhis.cerema.fr/" target="_blank" rel="noopener">Candhis / Cerema</a>, relevées toutes les 30 min. Vent mesuré : <a href="https://www.openwindmap.org/" target="_blank" rel="noopener">OpenWindMap / Pioupiou</a> (© contributeurs OpenWindMap). Marée mesurée : <a href="https://data.shom.fr/" target="_blank" rel="noopener">SHOM</a>. Marée et coefficient prévus : estimation, pas pour la navigation. Hauteur de surf : formule de Komar et Gaughan (1972) appliquée à chaque houle, puis coefficient d'abri du spot. Regardez toujours l'eau avant d'y aller.</p>
+  <p>Prévisions : <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, qui redistribue les modèles Météo-France (vagues MFWAM, vent AROME HD 1,3 km sur 48 h puis AROME / ARPEGE), DWD (vagues EWAM) et ECMWF (vent) ; les deux derniers servent à l'indice de confiance. Bouées : <a href="https://candhis.cerema.fr/" target="_blank" rel="noopener">Candhis / Cerema</a>, relevées toutes les 30 min. Vent mesuré : <a href="https://www.openwindmap.org/" target="_blank" rel="noopener">OpenWindMap / Pioupiou</a> (© contributeurs OpenWindMap). Marée mesurée : <a href="https://data.shom.fr/" target="_blank" rel="noopener">SHOM</a>. Bathymétrie : <a href="https://emodnet.ec.europa.eu/en/bathymetry" target="_blank" rel="noopener">EMODnet</a>, trait de côte © contributeurs OpenStreetMap. Marée et coefficient prévus : estimation, pas pour la navigation. Hauteur de surf : formule de Komar et Gaughan (1972) appliquée à chaque houle, puis coefficient d'abri du spot. Regardez toujours l'eau avant d'y aller.</p>
 </footer>
 <div id="tip" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/core.js?v=3.3"></script>
-<script src="js/map.js?v=3.3"></script>
-<script src="js/views.js?v=3.3"></script>
-<script src="js/main.js?v=3.3"></script>
+<script src="js/core.js?v=3.7"></script>
+<script src="js/coast.js?v=3.7"></script>
+<script src="js/map.js?v=3.7"></script>
+<script src="js/views.js?v=3.7"></script>
+<script src="js/main.js?v=3.7"></script>
 </body>
 </html>

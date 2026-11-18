@@ -31,6 +31,7 @@ document.addEventListener("mousemove", e => {
 });
 $("#fhour").addEventListener("input", e => setMapHour(+e.target.value));
 $("#fplay").addEventListener("click", togglePlay);
+$("#fpart").addEventListener("click", toggleParticles);
 $("#fnow").addEventListener("click", () => { const k = MV.times.indexOf(S.nowKey); if (k >= 0) setMapHour(k); });
 
 async function boot() {
@@ -43,7 +44,7 @@ async function boot() {
   if (MV.ready) drawSpots();
   route();
 }
-$("#refresh").addEventListener("click", () => { try { sessionStorage.removeItem("grid-wave-v31"); sessionStorage.removeItem("grid-wind-v31"); } catch (e) {} MV.grid = null; boot(); });
+$("#refresh").addEventListener("click", () => { try { sessionStorage.removeItem("grid-wave-v5"); sessionStorage.removeItem("grid-wind-v5"); } catch (e) {} MV.grid = null; boot(); });
 route();
 boot();
 setInterval(boot, 15 * 60e3);
