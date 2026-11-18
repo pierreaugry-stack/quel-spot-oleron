@@ -234,7 +234,7 @@ footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
         <button class="chip" type="button" data-fmode="energy" aria-pressed="false">Énergie</button>
         <button class="chip" type="button" data-fmode="period" aria-pressed="false">Période</button>
       </div>
-      <button class="btn" id="fpart" type="button" aria-pressed="true">Vent animé</button>
+      <button class="btn" id="fpart" type="button" aria-pressed="true">Animation</button>
       <div class="slider"><input type="range" id="fhour" min="0" max="0" value="0" aria-label="Heure affichée"><output id="fhourLabel" for="fhour">–</output></div>
       <button class="btn" id="fplay" type="button" aria-pressed="false">▶ Lecture</button>
       <button class="btn" id="fnow" type="button">Maintenant</button>
@@ -242,7 +242,7 @@ footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
     <div id="fmap" role="region" aria-label="Carte de houle et de vent"></div>
     <div class="flegend" id="flegend"></div>
     <p class="m" id="fmapStatus"></p>
-    <p class="m">Les traits blancs montrent le vent (sens et force). Les couleurs de houle viennent d'un modèle côtier qui part de la houle du large Météo-France et ajoute l'ombre des îles, la réfraction et la levée sur les fonds (bathymétrie EMODnet), le frottement sur les petits fonds, la marée et la mer du vent créée sur place selon la distance à la côte. Touchez un point de la mer pour lire les valeurs ; touchez une pastille pour ouvrir la fiche du spot.</p>
+    <p class="m">En mode Vent, couleurs et traits blancs montrent le vent (AROME HD). En mode Hauteur, Énergie ou Période, on ne voit que les vagues : les traits suivent la houle, et filent plus vite quand la période est longue. Les couleurs de houle viennent d'un modèle côtier qui part de la houle du large Météo-France et ajoute l'ombre des îles, la réfraction et la levée sur les fonds (bathymétrie EMODnet), le frottement sur les petits fonds, la marée et la mer du vent créée sur place selon la distance à la côte. Touchez un point de la mer pour lire les valeurs ; touchez une pastille pour ouvrir la fiche du spot.</p>
   </section>
 
   <section id="v-direct" hidden aria-labelledby="h-direct">
@@ -289,13 +289,13 @@ footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
 </footer>
 <div id="tip" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/config.js?v=4.1"></script>
-<script src="js/core.js?v=4.1"></script>
-<script src="js/coast.js?v=4.1"></script>
-<script src="js/map.js?v=4.1"></script>
-<script src="js/views.js?v=4.1"></script>
-<script src="js/direct.js?v=4.1"></script>
-<script src="js/reviews.js?v=4.1"></script>
-<script src="js/main.js?v=4.1"></script>
+<script src="js/config.js?v=4.2"></script>
+<script src="js/core.js?v=4.2"></script>
+<script src="js/coast.js?v=4.2"></script>
+<script src="js/map.js?v=4.2"></script>
+<script src="js/views.js?v=4.2"></script>
+<script src="js/direct.js?v=4.2"></script>
+<script src="js/reviews.js?v=4.2"></script>
+<script src="js/main.js?v=4.2"></script>
 </body>
 </html>

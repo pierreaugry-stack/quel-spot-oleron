@@ -3,6 +3,51 @@
  "updated": "2026-11-18",
  "spots": [
   {
+   "id": "lizay",
+   "name": "Le Lizay",
+   "area": "Les Portes-en-Ré, pointe nord-ouest de Ré",
+   "lat": 46.2563,
+   "lon": -1.5174,
+   "marine": [
+    46.3,
+    -1.56
+   ],
+   "wind": [
+    46.2563,
+    -1.5174
+   ],
+   "swell": {
+    "ideal": 325,
+    "window": 35
+   },
+   "size": [
+    0.8,
+    1.2,
+    2.5,
+    3.5
+   ],
+   "periodMin": 9,
+   "energy": null,
+   "wind_": {
+    "offshore": 145,
+    "maxOffshore": 35
+   },
+   "tide": {
+    "lo": 0.5,
+    "hi": 1.0,
+    "prefer": "montante"
+   },
+   "coef": {
+    "min": null,
+    "max": null
+   },
+   "level": "Confirmé",
+   "type": "Gauche sur dalle rocheuse",
+   "dangers": "Dalle de gros rochers, peu d'eau à marée basse.",
+   "notes": "Meilleur sur les trois dernières heures de la montante et le début de la descendante. Houle d'ouest à nord-nord-ouest avec vent de sud-est à est : gauche puissante.",
+   "shelter": 0.8
+  },
+  {
    "id": "chassiron",
    "name": "Chassiron",
    "area": "Pointe nord d'Oléron",
@@ -184,6 +229,51 @@
    "dangers": "Platier rocheux à marée basse ; plage jamais surveillée.",
    "notes": "Se surfe à marée haute.",
    "shelter": 0.75
+  },
+  {
+   "id": "grandvillage",
+   "name": "Grand Village",
+   "area": "Le Grand-Village-Plage, côte ouest d'Oléron",
+   "lat": 45.862,
+   "lon": -1.262,
+   "marine": [
+    45.86,
+    -1.34
+   ],
+   "wind": [
+    45.862,
+    -1.262
+   ],
+   "swell": {
+    "ideal": 280,
+    "window": 40
+   },
+   "size": [
+    0.4,
+    0.8,
+    1.8,
+    2.6
+   ],
+   "periodMin": 8,
+   "energy": null,
+   "wind_": {
+    "offshore": 70,
+    "maxOffshore": 35
+   },
+   "tide": {
+    "lo": 0.35,
+    "hi": 0.85,
+    "prefer": "montante"
+   },
+   "coef": {
+    "min": null,
+    "max": null
+   },
+   "level": "Tous niveaux, confirmés quand c'est gros",
+   "type": "Beach break, bancs de sable",
+   "dangers": "Courants et baïnes, surtout par gros coefficient.",
+   "notes": "Même plage que Vert-Bois plus au nord. Glassy par vent de nord-est, s'améliore souvent à la montante. Vent d'ouest-sud-ouest onshore : agité.",
+   "shelter": 0.85
   },
   {
    "id": "sauvage",

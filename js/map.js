@@ -7,7 +7,7 @@
 const FGRID = { lat: [45.3, 46.6, 0.1], lon: [-2.4, -0.85, 0.1] };
 const LAYERS = {
   wind: { label: "Vent moyen à 10 m", unit: "km/h", stops: [[0, "#2446a8"], [10, "#1c94d4"], [18, "#22bf86"], [26, "#cfd52d"], [34, "#f3a224"], [45, "#e5452c"], [65, "#9b1235"]] },
-  hs: { label: "Hauteur significative des vagues (Hs)", unit: "m", stops: [[0, "#1d2f8f"], [0.3, "#1c4fc0"], [0.6, "#1a7fd8"], [0.9, "#17b0d6"], [1.2, "#16c597"], [1.5, "#2ccf4f"], [1.8, "#9fd82d"], [2.1, "#e9de2b"], [2.7, "#f6b023"], [3.5, "#f06a25"], [4.6, "#e02c2c"], [6, "#a3122f"], [8, "#7d1f8c"]] },
+  hs: { label: "Hauteur des vagues (Hs)", unit: "m", stops: [[0, "#161c66"], [0.3, "#1534a8"], [0.6, "#1560d4"], [0.9, "#139fe0"], [1.2, "#12c7b0"], [1.5, "#16d65a"], [1.8, "#8ee32a"], [2.1, "#e8e828"], [2.4, "#f7c623"], [2.7, "#f79a22"], [3.0, "#f36a24"], [4.6, "#e3262b"], [6.1, "#9e0f2c"], [7.6, "#a321a8"], [9.1, "#e03ce0"]] },
   energy: { label: "Énergie de la houle", unit: "kW/m", stops: [[0, "#1d2f8f"], [2, "#1a7fd8"], [5, "#16c597"], [10, "#9fd82d"], [20, "#e9de2b"], [40, "#f6b023"], [80, "#e02c2c"], [150, "#7d1f8c"]] },
   period: { label: "Période des vagues", unit: "s", stops: [[2, "#1d2f8f"], [5, "#1a7fd8"], [7, "#16c597"], [9, "#9fd82d"], [11, "#e9de2b"], [13, "#f6b023"], [15, "#e02c2c"], [18, "#7d1f8c"]] }
 };
@@ -149,6 +149,11 @@ function drawLand(ctx, dpr, color) {
   MV.land.forEach(ring => ring.forEach(([lo, la], i) => { const p = m.latLngToContainerPoint([la, lo]); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }));
   ctx.fill("evenodd"); ctx.restore();
 }
+function drawCoast(ctx, dpr) {
+  const m = MV.map; ctx.save(); ctx.scale(dpr, dpr); ctx.strokeStyle = "rgba(20,24,28,.85)"; ctx.lineWidth = 1.4; ctx.beginPath();
+  MV.land.forEach(ring => ring.forEach(([lo, la], i) => { const p = m.latLngToContainerPoint([la, lo]); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }));
+  ctx.closePath(); ctx.stroke(); ctx.restore();
+}
 function valueAt(lat, lon) {
   if (MV.mode === "wind") return bil(MV.grid.hours[MV.idx].ws, lat, lon);
   if (lon < CM.X0 + 0.01) { // au large, hors du modèle côtier : houle Météo-France telle quelle
@@ -172,7 +177,7 @@ function drawField() {
   }
   octx.putImageData(img, 0, 0);
   ctx.clearRect(0, 0, cv.width, cv.height); ctx.imageSmoothingEnabled = true; ctx.drawImage(off, 0, 0, cv.width, cv.height);
-  if (MV.mode === "wind") { ctx.globalAlpha = 0.5; drawLand(ctx, dpr, "#2a2c2f"); ctx.globalAlpha = 1; } else drawLand(ctx, dpr, "#3b3d40");
+  if (MV.mode === "wind") drawCoast(ctx, dpr); else drawLand(ctx, dpr, "#3b3d40");
 }
 
 /* ---------- particules de vent ---------- */
@@ -180,6 +185,20 @@ function seedParticles() {
   if (!MV.ready) return;
   const s = MV.map.getSize(), n = Math.round(clamp(s.x * s.y / 700, 400, 1800));
   MV.particles = Array.from({ length: n }, () => ({ x: Math.random() * s.x, y: Math.random() * s.y, age: Math.random() * 60 | 0 }));
+}
+function onSea(lat, lon) {
+  if (!CM.ready) return true;
+  const i = Math.floor((lon - CM.X0) / CM.d), j = Math.floor((lat - CM.Y0) / CM.d);
+  if (i < 0) return true; if (j < 0 || i >= CM.nx || j >= CM.ny) return false;
+  return !CM.land[j * CM.nx + i];
+}
+/* déplacement des traits : le vent en mode Vent, la houle (sens de propagation, vitesse selon la période) sinon */
+function flowVec(lat, lon) {
+  if (MV.mode === "wind") { const w = windVec(lat, lon); return w ? [w[0], w[1], 0.25 + w[2] * 0.06] : null; }
+  if (!onSea(lat, lon)) return null;
+  const f = MV.grid.hours[MV.idx], s = bil(f.sws, lat, lon), c = bil(f.swc, lat, lon), p = bil(f.swp, lat, lon);
+  if (s == null || c == null) return null;
+  const n = Math.hypot(s, c) || 1; return [-s / n, -c / n, 0.35 + (p ?? 8) * 0.07];
 }
 function windVec(lat, lon) {
   const f = MV.grid.hours[MV.idx]; const s = bil(f.wds, lat, lon), c = bil(f.wdc, lat, lon), v = bil(f.ws, lat, lon);
@@ -192,9 +211,9 @@ function stepParticles() {
   if (!MV.partOn) return;
   ctx.save(); ctx.scale(dpr, dpr); ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 1.1; ctx.lineCap = "round"; ctx.beginPath();
   MV.particles.forEach((p, i) => {
-    const ll = m.containerPointToLatLng([p.x, p.y]); const w = windVec(ll.lat, ll.lng);
+    const ll = m.containerPointToLatLng([p.x, p.y]); const w = flowVec(ll.lat, ll.lng);
     if (!w || p.age > 70) { MV.particles[i] = { x: Math.random() * s.x, y: Math.random() * s.y, age: 0 }; return; }
-    const sp = 0.25 + w[2] * 0.06, nx = p.x + w[0] * sp, ny = p.y - w[1] * sp;
+    const sp = w[2], nx = p.x + w[0] * sp, ny = p.y - w[1] * sp;
     if (nx < 0 || ny < 0 || nx > s.x || ny > s.y) { MV.particles[i] = { x: Math.random() * s.x, y: Math.random() * s.y, age: 0 }; return; }
     ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); p.x = nx; p.y = ny; p.age++;
   });
@@ -251,5 +270,6 @@ function togglePlay() {
 }
 function setMapMode(mode) {
   MV.mode = mode; document.querySelectorAll("[data-fmode]").forEach(b => b.setAttribute("aria-pressed", b.dataset.fmode === mode));
-  drawLegend(); drawField();
+  drawLegend(); drawField(); seedParticles();
+  const c = MV.part.getContext("2d"); c.clearRect(0, 0, MV.part.width, MV.part.height);
 }
