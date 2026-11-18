@@ -337,7 +337,7 @@ async function loadAll() {
   const pB = loadBeacons().then(b => { S.beacons = b; }).catch(() => { S.beacons = []; S.errors.push("Balises de vent injoignables."); });
   const pG = loadGauge().then(g => { S.gauge = g; }).catch(() => { S.gauge = null; });
   await Promise.all([pF, pO, pB, pG, pC]);
-  computeSkill(); scoreAll();
+  calibrateTide(); computeSkill(); scoreAll();
 }
 
 /* ---------- créneaux ---------- */
@@ -358,3 +358,44 @@ function windowsFor(list) {
 const dates = () => S.spots.length ? [...new Set(S.spots[0].hours.map(h => h.t.slice(0, 10)))].slice(0, DAYS) : [];
 const dayIndexOf = t => dates().indexOf(t.slice(0, 10));
 const tideState = h => { const n = h?.tide?.n; if (n == null) return "–"; const l = n < 0.2 ? "basse" : n < 0.4 ? "mi-basse" : n < 0.6 ? "mi-marée" : n < 0.8 ? "mi-haute" : "haute"; return `${l} ${h.tide.rising ? "↗" : "↘"}`; };
+
+
+/* ---------- marée calée sur le marégraphe de La Cotinière ----------
+   Le niveau prévu par le modèle (Open-Meteo) a la bonne forme mais une amplitude et un horaire
+   approximatifs près des côtes. On cherche le décalage (−2 h à +2 h) et la relation linéaire
+   hauteur_réelle = a × niveau_modèle + b qui collent le mieux aux 30 dernières heures mesurées,
+   puis on l'applique aux prévisions : hauteurs au-dessus du zéro des cartes, heures de pleine et
+   basse mer, et coefficient recalculé à partir du marnage (repères de La Rochelle-Pallice :
+   2,47 m en mortes-eaux moyennes = coef 45, 5,12 m en vives-eaux moyennes = coef 95). */
+function calibrateTide() {
+  S.tideCal = null;
+  const g = S.gauge, ser = S.tide?.series;
+  if (!g || g.length < 300 || !ser?.length) return;
+  const T = ser.map(p => new Date(p.t + ":00").getTime()), V = ser.map(p => p.v);
+  const modelAt = ms => { let lo = 0, hi = T.length - 1; if (ms < T[0] || ms > T[hi]) return null; while (hi - lo > 1) { const m = (lo + hi) >> 1; T[m] <= ms ? lo = m : hi = m; } const f = (ms - T[lo]) / (T[hi] - T[lo] || 1); return V[lo] + (V[hi] - V[lo]) * f; };
+  const pts = g.filter((_, i) => i % 5 === 0);
+  let best = null;
+  for (let lag = -120; lag <= 120; lag += 5) {
+    const xs = [], ys = [];
+    pts.forEach(p => { const x = modelAt(+p.t - lag * 60e3); if (x != null) { xs.push(x); ys.push(p.v); } });
+    if (xs.length < 40) continue;
+    const mx = mean(xs), my = mean(ys); let sxy = 0, sxx = 0;
+    xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; });
+    if (sxx < 1e-6) continue;
+    const a = sxy / sxx, b = my - a * mx;
+    const rmse = Math.sqrt(mean(xs.map((x, i) => (a * x + b - ys[i]) ** 2)));
+    if (a > 0.5 && a < 5 && (!best || rmse < best.rmse)) best = { a, b, lag, rmse, n: xs.length };
+  }
+  if (!best || best.rmse > 0.45) return;
+  S.tideCal = best;
+  const coefOf = range => Math.round(clamp(45 + (range - 2.47) * 50 / 2.65, 20, 120));
+  // niveau réel et coefficient pour chaque heure prévue
+  S.tide.series.forEach((p, i) => {
+    const ms = new Date(p.t + ":00").getTime(), x = modelAt(ms - best.lag * 60e3);
+    const e = S.tide.map.get(p.t); if (!e || x == null) return;
+    e.levelCD = best.a * x + best.b;
+    const w = S.tide.series.slice(Math.max(0, i - 7), i + 8).map(q => q.v);
+    e.coef = coefOf(best.a * (Math.max(...w) - Math.min(...w)));
+  });
+  S.tide.extremes.forEach(x => { x.at = new Date(x.at.getTime() + best.lag * 60e3); x.levelCD = best.a * x.level + best.b; const e = S.tide.map.get(x.time); if (e) x.coef = e.coef; });
+}

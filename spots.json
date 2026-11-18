@@ -45,7 +45,13 @@
    "type": "Gauche sur dalle rocheuse",
    "dangers": "Dalle de gros rochers, peu d'eau à marée basse.",
    "notes": "Meilleur sur les trois dernières heures de la montante et le début de la descendante. Houle d'ouest à nord-nord-ouest avec vent de sud-est à est : gauche puissante.",
-   "shelter": 0.8
+   "shelter": 0.8,
+   "webcams": [
+    [
+     "Le Lizay (surf-forecast)",
+     "https://www.surf-forecast.com/breaks/Ile-de-Re-Le-Lizay/webcams/latest"
+    ]
+   ]
   },
   {
    "id": "chassiron",
@@ -90,7 +96,17 @@
    "type": "Récif rocheux devant le phare",
    "dangers": "Oursins, courants (forts par gros coefficient), peu d'eau sur la roche, filets. Ne jamais surfer seul.",
    "notes": "500 m de marche sur le récif. Gauches assez longues, droites plus courtes et violentes.",
-   "shelter": 0.9
+   "shelter": 0.9,
+   "webcams": [
+    [
+     "Phare de Chassiron",
+     "https://www.oleron-island.com/webcams/le-phare-de-chassiron-en-direct"
+    ],
+    [
+     "Chassiron (Windfinder)",
+     "https://www.windfinder.com/webcams/chassiron"
+    ]
+   ]
   },
   {
    "id": "huttes",
@@ -135,7 +151,17 @@
    "type": "Beach break, bancs de sable",
    "dangers": "Aucun signalé.",
    "notes": "Plage non surveillée. Zone de kite au nord des Huttes.",
-   "shelter": 0.85
+   "shelter": 0.85,
+   "webcams": [
+    [
+     "Plage des Huttes",
+     "https://www.oleron-island.com/webcams/la-plage-des-huttes-en-direct"
+    ],
+    [
+     "Les Huttes (CamStreamer)",
+     "https://camstreamer.com/live/stream/2354-surf-spot-les-huttes-oleron-france"
+    ]
+   ]
   },
   {
    "id": "stdenis",
@@ -183,7 +209,13 @@
    "type": "Gauches qui déroulent le long du port",
    "dangers": "Digue, bateaux et chenaux du port (à confirmer).",
    "notes": "Plat la plupart du temps. Marche quand une grosse houle d'ouest contourne Chassiron ; vent d'ouest offshore. Taille mesurée au large.",
-   "shelter": 0.3
+   "shelter": 0.3,
+   "webcams": [
+    [
+     "Port de Saint-Denis",
+     "https://www.oleron-island.com/webcams/le-port-de-saint-denis-d-oleron-en-direct"
+    ]
+   ]
   },
   {
    "id": "ecuissiere",
@@ -228,7 +260,13 @@
    "type": "Plage de sable, platier rocheux à marée basse",
    "dangers": "Platier rocheux à marée basse ; plage jamais surveillée.",
    "notes": "Se surfe à marée haute.",
-   "shelter": 0.75
+   "shelter": 0.75,
+   "webcams": [
+    [
+     "Port de La Cotinière",
+     "https://www.oleron-island.com/webcams/port-de-la-cotiniere-en-direct"
+    ]
+   ]
   },
   {
    "id": "grandvillage",
@@ -273,7 +311,17 @@
    "type": "Beach break, bancs de sable",
    "dangers": "Courants et baïnes, surtout par gros coefficient.",
    "notes": "Même plage que Vert-Bois plus au nord. Glassy par vent de nord-est, s'améliore souvent à la montante. Vent d'ouest-sud-ouest onshore : agité.",
-   "shelter": 0.85
+   "shelter": 0.85,
+   "webcams": [
+    [
+     "Port de La Cotinière",
+     "https://www.oleron-island.com/webcams/port-de-la-cotiniere-en-direct"
+    ],
+    [
+     "Saint-Trojan, la petite plage",
+     "https://www.oleron-island.com/webcams/la-petite-plage-of-saint-trojan-les-bains-live"
+    ]
+   ]
   },
   {
    "id": "sauvage",
@@ -318,7 +366,17 @@
    "type": "Beach break exposé, baïnes",
    "dangers": "Baïnes, courants forts (surtout à la descendante et par gros coefficient).",
    "notes": "Rarement bondé. Souvent insurfable l'hiver quand c'est gros.",
-   "shelter": 0.95
+   "shelter": 0.95,
+   "webcams": [
+    [
+     "Pointe Espagnole (surf-forecast)",
+     "https://www.surf-forecast.com/breaks/Cote-Sauvage-la-Pointe-Espagnole/webcams/latest"
+    ],
+    [
+     "Le 27 (surf-forecast)",
+     "https://www.surf-forecast.com/breaks/Cote-Sauvage-Le-27/webcams/latest"
+    ]
+   ]
   }
  ]
 }

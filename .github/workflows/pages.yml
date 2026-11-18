@@ -32,6 +32,19 @@ jobs:
         env:
           MF_API_KEY: ${{ secrets.MF_API_KEY }}
         run: python scripts/fetch_obs.py data/obs.json
+      - name: Créneau de 3 h pour la grille de la carte
+        id: slot
+        run: echo "slot=$(date -u +%Y%m%d)-$(( $(date -u +%H) / 3 ))" >> "$GITHUB_OUTPUT"
+      - name: Grille en cache
+        id: gridcache
+        uses: actions/cache@v4
+        with:
+          path: data/grid.json
+          key: grid-${{ steps.slot.outputs.slot }}
+      - name: Grille de la carte (houle MFWAM + vent AROME HD)
+        if: steps.gridcache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: python scripts/fetch_grid.py data/grid.json
       - name: Archive des mesures (branche archive)
         run: |
           git fetch -q origin archive:archive || true
@@ -48,7 +61,7 @@ jobs:
       - name: Préparer le site
         run: |
           mkdir -p _site/archive
-          cp -r index.html js spots.json data .nojekyll _site/
+          cp -r index.html js spots.json data icons manifest.json sw.js .nojekyll _site/
           cp -r arch/obs _site/archive/ || true
       - uses: actions/upload-pages-artifact@v3
         with:

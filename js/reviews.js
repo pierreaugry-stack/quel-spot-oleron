@@ -178,7 +178,31 @@ function renderBilan() {
     return `<tr><td>${esc(s.name)}</td><td>${v.length}</td><td>${fmt(dU)}</td><td>${fmt(dT)}</td><td>${gap == null ? "–" : (gap >= 0 ? "+" : "") + fmt(gap)}</td><td>${hint}</td></tr>`;
   }).join("");
   $("#rv-bilan").innerHTML = `<table class="htable"><thead><tr><th>Spot</th><th>Sessions</th><th>Vos notes</th><th>Outil</th><th>Écart</th><th>Lecture</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="m">Écart = votre note moins celle de l'outil à la même heure. C'est la base pour recaler les critères : avec quelques sessions par spot, on verra quelles conditions donnent vos meilleures notes.</p>`;
+    <p class="m">Écart = votre note moins celle de l'outil à la même heure.</p>
+    <h3 style="margin-top:14px">Recalage des critères</h3>${S.cfg.spots.map(s => calibCard(s, RV.list.filter(r => r.spot === s.id && r.conditions?.tool))).join("")}`;
+}
+/* propositions de réglages à partir des bonnes sessions (note >= 7) et des sessions ratées (note <= 3) */
+function calibCard(spot, rv) {
+  const good = rv.filter(r => r.rating >= 7), ok = rv.filter(r => r.rating >= 4), bad = rv.filter(r => r.rating <= 3);
+  if (good.length < 3) return `<details class="calib"><summary>${esc(spot.name)} · ${rv.length} session${rv.length > 1 ? "s" : ""} analysable${rv.length > 1 ? "s" : ""}</summary><p class="m">Il faut au moins 3 sessions notées 7 ou plus pour proposer des réglages (${good.length} pour l'instant).</p></details>`;
+  const T = r => r.conditions.tool, q = (arr, p) => { const v = arr.filter(x => x != null).sort((a, b) => a - b); if (!v.length) return null; const i = (v.length - 1) * p, lo = Math.floor(i); return v[lo] + (v[Math.ceil(i)] - v[lo]) * (i - lo); };
+  const dirs = good.map(r => T(r).swell.d).filter(d => d != null);
+  const sx = mean(dirs.map(d => Math.sin(d * Math.PI / 180))), cx = mean(dirs.map(d => Math.cos(d * Math.PI / 180)));
+  const dIdeal = Math.round((Math.atan2(sx, cx) * 180 / Math.PI + 360) % 360), dWin = Math.round(clamp(Math.max(...dirs.map(d => angDiff(d, dIdeal))) + 10, 20, 60));
+  const H = good.map(r => T(r).heff), Hok = ok.map(r => T(r).heff), P = good.map(r => T(r).swell.p), N = good.map(r => T(r).tide.n);
+  const windOk = good.map(r => T(r).wind), onshoreGood = windOk.filter(w => /onshore|side-on/.test(w.label)).length;
+  const prop = [
+    ["Houle idéale", `${card(spot.swell.ideal)} ${spot.swell.ideal}° ± ${spot.swell.window}°`, `${card(dIdeal)} ${dIdeal}° ± ${dWin}°`],
+    ["Taille idéale (houle vue du spot)", `${fmt(spot.size[1])}–${fmt(spot.size[2])} m`, `${fmt(q(H, 0.15))}–${fmt(q(H, 0.85))} m`],
+    ["Taille mini", `${fmt(spot.size[0])} m`, `${fmt(q(Hok, 0) ?? q(H, 0))} m`],
+    ["Période mini", `${spot.periodMin ?? "–"} s`, `${fmt(q(P, 0.1), 0)} s`],
+    ["Marée", `${Math.round(spot.tide.lo * 100)}–${Math.round(spot.tide.hi * 100)} %`, `${Math.round((q(N, 0.1) ?? 0) * 100)}–${Math.round((q(N, 0.9) ?? 1) * 100)} %`],
+    ["Vent pendant les bonnes sessions", `offshore ${card(spot.wind_.offshore)}`, `jusqu'à ${fmt(Math.max(...windOk.map(w => w.v ?? 0)), 0)} km/h${onshoreGood ? `, ${onshoreGood} fois avec vent de mer` : ", jamais de vent de mer"}`]
+  ];
+  const badTxt = bad.length ? `Sessions ratées (${bad.length}) : houle vue du spot ${fmt(mean(bad.map(r => T(r).heff)))} m en moyenne, vent ${[...new Set(bad.map(r => T(r).wind.label))].join(", ")}.` : "";
+  return `<details class="calib" open><summary>${esc(spot.name)} · ${good.length} bonnes sessions sur ${rv.length}</summary>
+    <table class="htable"><thead><tr><th>Critère</th><th>Actuel</th><th>D'après vos sessions</th></tr></thead><tbody>${prop.map(p => `<tr><td>${p[0]}</td><td>${p[1]}</td><td><b>${p[2]}</b></td></tr>`).join("")}</tbody></table>
+    <p class="m">${badTxt} Ce sont des propositions : on les valide dans le doc des critères avant de les appliquer.</p></details>`;
 }
 
 /* ---------- envoi ---------- */

@@ -49,3 +49,7 @@ $("#refresh").addEventListener("click", () => { try { sessionStorage.removeItem(
 route();
 boot();
 setInterval(boot, 15 * 60e3);
+
+/* appli installable et lisible hors réseau */
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+window.addEventListener("offline", () => { const eb = $("#errors"); eb.hidden = false; eb.textContent = "Pas de réseau : affichage des dernières données chargées."; });

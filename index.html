@@ -6,6 +6,12 @@
 <title>Quel spot à Oléron ?</title>
 <meta name="description" content="Classement des spots de surf d'Oléron et de la Côte Sauvage selon tes critères, prévisions heure par heure, carte de houle et de vent, bouées et vent en direct.">
 <meta name="theme-color" content="#0f1d22">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Quel spot">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -92,6 +98,8 @@ h3{font-size:1.02rem;font-weight:700;margin-bottom:8px}
 /* Fiche spot */
 .back{font:600 13px var(--body);text-decoration:none}
 .shead{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.cams{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-top:4px;font-size:13.5px}
+.cams a{font-weight:600}
 .sname{font-size:clamp(1.6rem,4.5vw,2.3rem);font-weight:800;letter-spacing:-.015em}
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .bigrow{display:flex;gap:14px;align-items:center;margin:6px 0 8px}
@@ -197,6 +205,8 @@ h3{font-size:1.02rem;font-weight:700;margin-bottom:8px}
 .rvtext{margin:0;white-space:pre-wrap}
 .rvphotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
 .rvphotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;display:block}
+.calib{border-top:1px solid var(--line);padding:8px 0}
+.calib summary{cursor:pointer;font:600 14px var(--body)}
 .rv details summary{cursor:pointer;font:600 13px var(--body);color:var(--accent)}
 footer{max-width:1180px;margin:0 auto;padding-block:0 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
@@ -289,13 +299,13 @@ footer p{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
 </footer>
 <div id="tip" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/config.js?v=4.2"></script>
-<script src="js/core.js?v=4.2"></script>
-<script src="js/coast.js?v=4.2"></script>
-<script src="js/map.js?v=4.2"></script>
-<script src="js/views.js?v=4.2"></script>
-<script src="js/direct.js?v=4.2"></script>
-<script src="js/reviews.js?v=4.2"></script>
-<script src="js/main.js?v=4.2"></script>
+<script src="js/config.js?v=4.3"></script>
+<script src="js/core.js?v=4.3"></script>
+<script src="js/coast.js?v=4.3"></script>
+<script src="js/map.js?v=4.3"></script>
+<script src="js/views.js?v=4.3"></script>
+<script src="js/direct.js?v=4.3"></script>
+<script src="js/reviews.js?v=4.3"></script>
+<script src="js/main.js?v=4.3"></script>
 </body>
 </html>

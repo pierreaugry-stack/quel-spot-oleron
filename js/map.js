@@ -31,7 +31,24 @@ function gridPts() {
   for (let lo = FGRID.lon[0]; lo <= FGRID.lon[1] + 1e-9; lo += FGRID.lon[2]) lons.push(+lo.toFixed(3));
   return { lats, lons };
 }
+/* grille précalculée toutes les 3 h par GitHub Actions (data/grid.json) : chargement instantané */
+async function loadPrecomputedGrid() {
+  const j = await getJSON(`data/grid.json?ts=${Math.floor(Date.now() / 9e5)}`, 20000);
+  if (Date.now() - new Date(j.generated) > 5 * 3600e3 || !j.times.includes(S.nowKey)) throw new Error("grille trop ancienne");
+  const nr = j.lats.length, nc = j.lons.length, rad = Math.PI / 180;
+  const g = { lats: j.lats, lons: j.lons, nr, nc, times: j.times, hours: [], source: "précalculée " + ago(Date.now() - new Date(j.generated)) };
+  j.times.forEach((_, t) => {
+    const sd = j.swd[t], wd = j.wd[t];
+    const f = { swh: j.swh[t], swp: j.swp[t], wwh: j.wwh[t], ws: j.ws[t],
+      sws: sd.map(d => d == null ? null : Math.sin(d * rad)), swc: sd.map(d => d == null ? null : Math.cos(d * rad)),
+      wds: wd.map(d => d == null ? null : Math.sin(d * rad)), wdc: wd.map(d => d == null ? null : Math.cos(d * rad)) };
+    ["swh", "sws", "swc", "swp", "wwh"].forEach(k => { f[k] = fillGaps(f[k], nr, nc); });
+    g.hours.push(f);
+  });
+  return g;
+}
 async function loadFieldGrid() {
+  try { return await loadPrecomputedGrid(); } catch (e) { /* repli : interrogation directe d'Open-Meteo */ }
   const { lats, lons } = gridPts();
   const pts = []; lats.forEach(la => lons.forEach(lo => pts.push([la, lo])));
   const lat = pts.map(p => p[0]).join(","), lon = pts.map(p => p[1]).join(",");

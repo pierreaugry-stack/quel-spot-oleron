@@ -90,7 +90,8 @@ function renderSpot(id) {
   $("#spotview").innerHTML = `
     <a class="back" href="#classement">← Classement</a>
     <div class="shead">
-      <div><div class="eyebrow">${esc(spot.area)} · ${esc(spot.level)}</div><h2 class="sname">${esc(spot.name)}</h2></div>
+      <div><div class="eyebrow">${esc(spot.area)} · ${esc(spot.level)}</div><h2 class="sname">${esc(spot.name)}</h2>
+        ${spot.webcams?.length ? `<div class="cams"><span class="m">Webcam :</span> ${spot.webcams.map(([n, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(n)} ↗</a>`).join(" ")}</div>` : ""}</div>
       <div class="chips" role="group" aria-label="Jour">${dts.map((d, i) => `<button class="chip" type="button" data-sday="${i}" aria-pressed="${i === V.spotDay}">${dayName(d, i)}</button>`).join("")}</div>
     </div>
     <div class="sgrid">
@@ -171,13 +172,13 @@ function tideChart(day, sr, ss) {
   S.tide.extremes.filter(e => e.time.slice(0, 10) === day).forEach(e => {
     const fh = (e.at.getTime() - new Date(day + "T00:00:00").getTime()) / 3600e3;
     const x = L + fh / 24 * (w - L - R), y = Y(e.level);
-    s += `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--accent)"/><text x="${x}" y="${e.high ? y - 7 : y + 14}" text-anchor="middle" class="ax strong">${e.high ? "PM" : "BM"} ${hhmm(e.at)}</text>`;
+    s += `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--accent)"/><text x="${x}" y="${e.high ? y - 7 : y + 14}" text-anchor="middle" class="ax strong">${e.high ? "PM" : "BM"} ${hhmm(e.at)}${e.levelCD != null ? " · " + fmt(e.levelCD, 1) + " m" : ""}</text>`;
   });
   if (S.nowKey.slice(0, 10) === day) { const now = new Date(), fh = now.getHours() + now.getMinutes() / 60; s += `<line x1="${X(fh)}" x2="${X(fh)}" y1="${T}" y2="${h - B}" stroke="var(--fg)" stroke-dasharray="2 3"/>`; }
   [0, 6, 12, 18, 24].forEach(hh => { s += `<text x="${X(hh)}" y="${h - 6}" text-anchor="${hh === 0 ? "start" : hh === 24 ? "end" : "middle"}" class="ax">${hh}h</text>`; });
   const coef = S.tide.map.get(day + "T12:00")?.coef;
   const g = S.gauge?.length ? S.gauge[S.gauge.length - 1] : null;
-  return s + `</svg><p class="m">Coefficient estimé ≈ ${coef ?? "–"}. ${g && S.nowKey.slice(0, 10) === day ? `Mesuré à La Cotinière : ${fmt(g.v, 2)} m (${ago(Date.now() - g.t)}).` : ""} Heures de pleine et basse mer estimées par le modèle, à vérifier sur l'annuaire du SHOM.</p>`;
+  return s + `</svg><p class="m">Coefficient ≈ ${coef ?? "–"}. ${g && S.nowKey.slice(0, 10) === day ? `Mesuré à La Cotinière : ${fmt(g.v, 2)} m (${ago(Date.now() - g.t)}).` : ""} ${S.tideCal ? `Heures et hauteurs calées sur le marégraphe de La Cotinière (écart moyen ${fmt(S.tideCal.rmse * 100, 0)} cm, décalage ${S.tideCal.lag >= 0 ? "+" : ""}${S.tideCal.lag} min) ; hauteurs au-dessus du zéro des cartes.` : "Heures de pleine et basse mer estimées par le modèle, à vérifier sur l'annuaire du SHOM."}</p>`;
 }
 const nextDay = d => { const x = new Date(d + "T12:00"); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10); };
 function partsBlock(h, spot) {

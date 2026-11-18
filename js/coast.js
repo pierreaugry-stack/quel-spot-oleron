@@ -180,7 +180,9 @@ function coastSample(arrv, lat, lon) {
 }
 /* niveau de marée estimé (m par rapport au niveau moyen) à partir de la marée normalisée et du coefficient */
 function tideLevelAt(t) {
-  const tt = S.tide?.map.get(t); if (!tt || tt.n == null) return 0;
+  const tt = S.tide?.map.get(t); if (!tt) return 0;
+  if (tt.levelCD != null) return tt.levelCD - CM.LAT; // hauteur réelle calée sur le marégraphe
+  if (tt.n == null) return 0;
   const range = 2 + 3.5 * clamp(((tt.coef ?? 70) - 35) / 75, 0, 1);
   return (tt.n - 0.5) * range;
 }

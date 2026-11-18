@@ -1,0 +1,29 @@
+name: Alerte du soir
+
+# Chaque soir vers 19 h (heure de Paris) : message Telegram si un spot dépasse 7/10 demain.
+on:
+  schedule:
+    - cron: "15 17 * * *"
+  workflow_dispatch:
+    inputs:
+      seuil:
+        description: "Note minimale pour alerter"
+        default: "7"
+
+permissions:
+  contents: read
+
+jobs:
+  alerte:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Créneaux de demain et message
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ALERT_MIN_SCORE: ${{ inputs.seuil || '7' }}
+        run: node scripts/alerts.mjs
