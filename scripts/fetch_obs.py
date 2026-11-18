@@ -130,6 +130,8 @@ def fetch_mf(key: str) -> list:
                 if r:
                     break
             rows += r or []
+            if r and all(any(str(x.get("geo_id_insee")) == s["id"] for x in r) for s in MF_STATIONS):
+                break  # la réponse contient déjà toutes les stations voulues
     if not rows:
         rows = []
         for st in MF_STATIONS:
@@ -151,7 +153,7 @@ def fetch_mf(key: str) -> list:
             series.append({"t": t[:19] + "Z" if not t.endswith("Z") else t,
                            "v": round(ff * 3.6, 1), "g": None if gust is None else round(gust * 3.6, 1),
                            "d": dd, "temp": num(row.get("t"))})
-        series.sort(key=lambda r: r["t"])
+        series = sorted({r["t"]: r for r in series}.values(), key=lambda r: r["t"])
         out.append(dict(st, series=series[-240:]))
     return out
 
