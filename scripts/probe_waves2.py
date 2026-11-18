@@ -38,7 +38,7 @@ def main():
         if not times:
             # certains documents listent les échéances autrement
             print(txt[600:2500]); continue
-        t = times[min(6, len(times) - 1)]
+        t = "000H999H" if "000H999H" in times else times[min(6, len(times) - 1)]
         b = get(f"/{prod}?grid={grid}&package=SP1&referencetime={ref}&time={t}&format={fmt}", raw=True)
         if isinstance(b, dict):
             print("téléchargement :", b); continue
@@ -52,13 +52,23 @@ def main():
                 print("dimensions :", {k: len(v) for k, v in ds.dimensions.items()})
                 print("variables :", {k: (v.dimensions, getattr(v, "long_name", "")[:40]) for k, v in ds.variables.items()})
                 la = ds.variables.get("latitude") or ds.variables.get("lat"); lo = ds.variables.get("longitude") or ds.variables.get("lon")
+                tv = ds.variables.get("time")
+                if tv is not None:
+                    print("temps :", len(tv), getattr(tv, "units", ""), float(tv[0]), float(tv[-1]))
                 if la is not None:
+                    import numpy as np
+                    lat_a, lon_a = la[:], lo[:]
+                    sw = ds.variables.get("SWH") or ds.variables.get("swh") or ds.variables.get("hs")
+                    if sw is not None and lat_a.ndim == 1:
+                        i = int(np.abs(lat_a - 46.08).argmin()); j = int(np.abs(lon_a + 1.46).argmin())
+                        print("Hs près de Chassiron :", sw.dimensions, float(sw[6, i, j]) if sw.ndim == 3 else "?")
                     print("emprise lat", float(la[:].min()), float(la[:].max()), "lon", float(lo[:].min()), float(lo[:].max()), "pas", float(la[1] - la[0]))
             else:
                 import cfgrib
                 for dsx in cfgrib.open_datasets(fn):
-                    print(dsx)
-                    break
+                    print("jeu :", {k: (v.dims, v.attrs.get("long_name", "")[:40]) for k, v in dsx.data_vars.items()})
+                    if "swh" in dsx:
+                        print("Hs près de Chassiron :", float(dsx["swh"].sel(latitude=46.08, longitude=-1.46, method="nearest")))
         except Exception as e:
             print("lecture impossible :", repr(e)[:300])
     return 0
