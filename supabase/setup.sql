@@ -16,6 +16,8 @@ create table if not exists public.reviews (
   conditions jsonb
 );
 alter table public.reviews enable row level security;
+grant usage on schema public to anon, authenticated;
+grant select on public.reviews to anon, authenticated;
 drop policy if exists "reviews lisibles par tous" on public.reviews;
 create policy "reviews lisibles par tous" on public.reviews for select to anon, authenticated using (true);
 
